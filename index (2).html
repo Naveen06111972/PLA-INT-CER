@@ -1,0 +1,2411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlaceIQ — Placement Dashboard v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg:#f8f6ff; --surface:#ffffff; --card:#fdfcff;
+    --border:rgba(124,58,237,0.12);
+    --accent:#7c3aed; --accent2:#db2777; --accent3:#ea580c; --accent4:#0284c7;
+    --accent5:#16a34a; --accent6:#d97706;
+    --text:#1e1040; --muted:#6b5e8a;
+    --grad1:linear-gradient(135deg,#7c3aed,#6366f1);
+    --grad2:linear-gradient(135deg,#db2777,#f43f5e);
+    --grad3:linear-gradient(135deg,#ea580c,#d97706);
+    --grad4:linear-gradient(135deg,#0284c7,#6366f1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;} html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background:
+    radial-gradient(ellipse 60% 50% at 10% 0%, rgba(124,58,237,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 90% 20%, rgba(2,132,199,0.05) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 50% 100%, rgba(219,39,119,0.04) 0%, transparent 60%);
+    pointer-events:none;z-index:0;}
+  body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,58,237,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  /* SIDEBAR */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:linear-gradient(180deg,rgba(255,255,255,0.98) 0%,rgba(248,246,255,0.99) 100%);border-right:1px solid rgba(124,58,237,0.1);display:flex;flex-direction:column;padding:28px 0;z-index:100;overflow-y:auto;backdrop-filter:blur(20px);box-shadow:4px 0 24px rgba(124,58,237,0.07);}
+  .logo{padding:0 24px 24px;border-bottom:1px solid var(--border);}
+  .logo-mark{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .logo-mark span{background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .logo-sub{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:4px;}
+  .nav{margin-top:20px;flex:1;}
+  .nav-label{font-size:9.5px;text-transform:uppercase;letter-spacing:2.5px;color:rgba(124,111,160,0.6);padding:0 24px;margin:16px 0 5px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;cursor:pointer;font-size:13px;color:var(--muted);transition:all 0.25s;border-left:2px solid transparent;position:relative;}
+  .nav-item:hover{color:var(--text);background:rgba(124,58,237,0.05);}
+  .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(124,58,237,0.07);}
+  .nav-item.active::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:2px 0 0 2px;opacity:0.4;}
+  .sidebar-footer{padding:16px 24px 0;border-top:1px solid var(--border);margin-top:auto;}
+  .batch-badge{background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(99,102,241,0.08));border:1px solid rgba(124,58,237,0.2);border-radius:20px;padding:6px 14px;font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;display:inline-block;}
+
+  /* MAIN */
+  .main{margin-left:240px;position:relative;z-index:1;}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid rgba(124,58,237,0.1);background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(124,58,237,0.06);}
+  .topbar-left h1{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .topbar-left p{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+  /* BUTTONS */
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;border:none;text-decoration:none;white-space:nowrap;font-weight:600;}
+  .btn-ghost{background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.14);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,0.07);}
+  .btn-primary{background:var(--grad1);color:#fff;font-weight:700;box-shadow:0 4px 20px rgba(192,132,252,0.3);}
+  .btn-primary:hover{opacity:0.88;box-shadow:0 4px 28px rgba(192,132,252,0.45);}
+  .btn-purple{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.2);color:var(--accent);}
+  .btn-purple:hover{background:rgba(124,58,237,0.15);}
+  .btn-yellow{background:rgba(250,204,21,0.1);border:1px solid rgba(250,204,21,0.25);color:var(--accent6);}
+  .btn-yellow:hover{background:rgba(250,204,21,0.18);}
+  .btn-danger{background:rgba(244,114,182,0.12);border:1px solid rgba(244,114,182,0.25);color:var(--accent2);}
+  .btn-danger:hover{background:rgba(244,114,182,0.2);}
+  .btn-orange{background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.25);color:var(--accent3);}
+  .btn-orange:hover{background:rgba(251,146,60,0.2);}
+  .btn-latest{background:var(--grad2);color:#fff;font-weight:700;box-shadow:0 4px 20px rgba(244,114,182,0.35);animation:glow 2.5s ease infinite;}
+  @keyframes glow{0%,100%{box-shadow:0 4px 20px rgba(244,114,182,0.35);}50%{box-shadow:0 4px 35px rgba(251,146,60,0.55);}}
+  .btn-sm{padding:5px 10px;font-size:11.5px;}
+  .btn-xs{padding:4px 8px;font-size:11px;}
+
+  /* PAGES */
+  .page{display:none;} .page.active{display:block;}
+  .content{padding:28px 32px;}
+
+  /* KPI */
+  .kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .kpi-card{background:rgba(255,255,255,0.98);border:1px solid rgba(124,58,237,0.1);border-radius:18px;padding:22px 24px;position:relative;overflow:hidden;transition:transform 0.25s,box-shadow 0.25s;animation:fadeUp 0.5s ease both;}
+  .kpi-card:hover{transform:translateY(-3px);}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;opacity:0.02;background:radial-gradient(ellipse at top right,#7c3aed,transparent 70%);}
+  .kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;}
+  .kpi-card:nth-child(1){border-color:rgba(124,58,237,0.15);box-shadow:0 4px 20px rgba(124,58,237,0.08);}
+  .kpi-card:nth-child(1):hover{box-shadow:0 8px 32px rgba(124,58,237,0.16);}
+  .kpi-card:nth-child(1)::after{background:var(--grad1);}
+  .kpi-card:nth-child(2){border-color:rgba(234,88,12,0.15);box-shadow:0 4px 20px rgba(234,88,12,0.07);}
+  .kpi-card:nth-child(2):hover{box-shadow:0 8px 32px rgba(234,88,12,0.14);}
+  .kpi-card:nth-child(2)::after{background:var(--grad3);}
+  .kpi-card:nth-child(3){border-color:rgba(2,132,199,0.15);box-shadow:0 4px 20px rgba(2,132,199,0.07);}
+  .kpi-card:nth-child(3):hover{box-shadow:0 8px 32px rgba(2,132,199,0.14);}
+  .kpi-card:nth-child(3)::after{background:var(--grad4);}
+  .kpi-card:nth-child(4){border-color:rgba(219,39,119,0.15);box-shadow:0 4px 20px rgba(219,39,119,0.07);}
+  .kpi-card:nth-child(4):hover{box-shadow:0 8px 32px rgba(219,39,119,0.14);}
+  .kpi-card:nth-child(4)::after{background:var(--grad2);}
+  .kpi-label{font-size:10.5px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px;}
+  .kpi-value{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;line-height:1;letter-spacing:-1px;}
+  .kpi-card:nth-child(1) .kpi-value{background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .kpi-card:nth-child(2) .kpi-value{background:var(--grad3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .kpi-card:nth-child(3) .kpi-value{background:var(--grad4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .kpi-card:nth-child(4) .kpi-value{background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .kpi-change{font-size:11.5px;margin-top:8px;}
+  .kpi-change.up{color:#16a34a;} .kpi-change.down{color:#db2777;}
+
+  /* GRIDS */
+  .grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+  .grid-2-equal{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .chart-card{background:rgba(255,255,255,0.95);border:1px solid rgba(124,58,237,0.1);border-radius:18px;padding:24px;box-shadow:0 2px 16px rgba(124,58,237,0.05);}
+  .chart-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
+  .chart-card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text);}
+  .chart-card-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+  .pill{font-size:10.5px;padding:4px 10px;border-radius:20px;font-family:'DM Mono',monospace;white-space:nowrap;font-weight:600;}
+  .pill-green{background:rgba(22,163,74,0.08);color:#16a34a;border:1px solid rgba(22,163,74,0.2);}
+  .pill-blue{background:rgba(2,132,199,0.1);color:#0369a1;border:1px solid rgba(2,132,199,0.2);}
+  .pill-yellow{background:rgba(217,119,6,0.1);color:#b45309;border:1px solid rgba(217,119,6,0.2);}
+  .pill-teal{background:rgba(124,58,237,0.08);color:var(--accent);border:1px solid rgba(124,58,237,0.18);}
+  .pill-red{background:rgba(219,39,119,0.08);color:var(--accent2);border:1px solid rgba(219,39,119,0.18);}
+
+  /* CHARTS */
+  .bar-chart{display:flex;align-items:flex-end;gap:7px;height:130px;}
+  .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .bars{display:flex;gap:3px;align-items:flex-end;height:110px;}
+  .bar{width:13px;border-radius:4px 4px 0 0;transition:opacity 0.2s;cursor:pointer;}
+  .bar:hover{opacity:0.75;}
+  .bar.teal{background:var(--grad1);} .bar.purple{background:var(--grad4);}
+  .bar-label{font-size:9.5px;color:var(--muted);font-family:'DM Mono',monospace;}
+  .donut-wrap{display:flex;align-items:center;gap:20px;}
+  .legend-item{display:flex;align-items:center;gap:7px;margin-bottom:8px;font-size:12px;}
+  .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .legend-pct{margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);}
+  .spark-item{display:flex;flex-direction:column;gap:5px;margin-bottom:9px;}
+  .spark-meta{display:flex;justify-content:space-between;}
+  .spark-name{font-size:12px;} .spark-val{font-family:'DM Mono',monospace;font-size:11px;}
+  .spark-bar-track{width:100%;height:5px;background:rgba(124,58,237,0.08);border-radius:10px;overflow:hidden;}
+  .spark-bar-fill{height:100%;border-radius:10px;}
+  .salary-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .salary-label{font-size:11.5px;width:78px;color:var(--muted);}
+  .salary-track{flex:1;height:8px;background:rgba(124,58,237,0.08);border-radius:10px;overflow:hidden;}
+  .salary-fill{height:100%;border-radius:10px;}
+  .salary-text{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);width:32px;text-align:right;}
+  .funnel-step{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+  .funnel-bar-wrap{flex:1;height:28px;background:rgba(124,58,237,0.06);border-radius:8px;overflow:hidden;}
+  .funnel-bar-fill{height:100%;display:flex;align-items:center;padding:0 10px;font-size:10.5px;font-family:'DM Mono',monospace;border-radius:8px;}
+  .funnel-step-label{font-size:11.5px;color:var(--muted);width:100px;text-align:right;}
+  .funnel-step-val{font-size:11.5px;font-family:'DM Mono',monospace;width:44px;text-align:right;color:var(--muted);}
+  .heatmap{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;}
+  .heatmap-label-row{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;margin-bottom:4px;}
+  .heatmap-month-label{font-size:8.5px;color:var(--muted);text-align:center;font-family:'DM Mono',monospace;}
+  .hm-cell{aspect-ratio:1;border-radius:3px;cursor:pointer;transition:transform 0.15s;}
+  .hm-cell:hover{transform:scale(1.2);}
+
+  /* TICKER */
+  .live-ticker{display:flex;align-items:center;gap:8px;padding:10px 18px;background:linear-gradient(135deg,rgba(124,58,237,0.07),rgba(2,132,199,0.05));border:1px solid rgba(124,58,237,0.16);border-radius:12px;font-size:12px;overflow:hidden;white-space:nowrap;margin-bottom:20px;}
+  .ticker-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;animation:pulse 1.5s ease infinite;box-shadow:0 0 8px rgba(124,58,237,0.5);}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.85);}}
+  .ticker-text{background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-family:'DM Mono',monospace;font-weight:600;}
+
+  /* STATUS */
+  .status-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;font-weight:600;}
+  .status-active{background:rgba(22,163,74,0.08);color:#16a34a;border:1px solid rgba(22,163,74,0.2);}
+  .status-closed{background:rgba(107,94,138,0.1);color:var(--muted);border:1px solid rgba(107,94,138,0.2);}
+  .status-upcoming{background:rgba(217,119,6,0.1);color:#b45309;border:1px solid rgba(217,119,6,0.2);}
+  .status-placed{background:rgba(124,58,237,0.08);color:var(--accent);border:1px solid rgba(124,58,237,0.18);}
+  .status-unplaced{background:rgba(219,39,119,0.08);color:var(--accent2);border:1px solid rgba(219,39,119,0.18);}
+  .status-intern{background:rgba(2,132,199,0.1);color:#0369a1;border:1px solid rgba(2,132,199,0.2);}
+
+  /* TABLES */
+  .data-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .data-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding:10px 12px;border-bottom:1px solid rgba(124,58,237,0.1);font-weight:600;}
+  .data-table td{padding:12px;border-bottom:1px solid rgba(124,58,237,0.07);vertical-align:middle;}
+  .data-table tr:last-child td{border-bottom:none;}
+  .data-table tr:hover td{background:rgba(124,58,237,0.04);}
+  .company-logo{width:28px;height:28px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-right:8px;vertical-align:middle;}
+  .action-btns{display:flex;gap:5px;}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity 0.25s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:rgba(255,255,255,0.99);border:1px solid rgba(124,58,237,0.12);border-radius:20px;width:100%;max-width:700px;max-height:92vh;overflow-y:auto;transform:translateY(22px);transition:transform 0.25s;position:relative;box-shadow:0 40px 80px rgba(0,0,0,0.15),0 0 60px rgba(124,58,237,0.06);}
+  .modal-overlay.open .modal{transform:translateY(0);}
+  .modal-header{padding:22px 26px 18px;border-bottom:1px solid rgba(124,58,237,0.1);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(255,255,255,0.97);z-index:1;backdrop-filter:blur(10px);}
+  .modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .modal-close{width:32px;height:32px;border-radius:8px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.12);color:var(--muted);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+  .modal-close:hover{background:rgba(124,58,237,0.12);color:var(--text);}
+  .modal-body{padding:22px 26px;}
+  .modal-footer{padding:18px 26px 22px;display:flex;justify-content:flex-end;gap:9px;border-top:1px solid rgba(124,58,237,0.1);}
+
+  /* FORM */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-group{display:flex;flex-direction:column;gap:6px;}
+  .form-group.full{grid-column:1/-1;}
+  label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+  input,select,textarea{background:rgba(248,246,255,0.8);border:1px solid rgba(124,58,237,0.15);border-radius:10px;color:var(--text);padding:10px 12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;transition:border-color 0.2s,box-shadow 0.2s;outline:none;width:100%;}
+  input:focus,select:focus,textarea:focus{border-color:rgba(192,132,252,0.5);box-shadow:0 0 0 3px rgba(124,58,237,0.1);}
+  select option{background:#ffffff;}
+  textarea{resize:vertical;min-height:80px;}
+  .form-divider{grid-column:1/-1;border:none;border-top:1px solid rgba(124,58,237,0.1);margin:2px 0;}
+
+  /* PAGE HEADER */
+  .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+  .page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .page-subtitle{font-size:12px;color:var(--muted);margin-top:3px;}
+
+  /* STAT ROW */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .stat-card{background:rgba(255,255,255,0.95);border:1px solid rgba(124,58,237,0.1);border-radius:14px;padding:15px 18px;box-shadow:0 2px 10px rgba(124,58,237,0.05);}
+  .stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;}
+  .stat-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+
+  /* TABS */
+  .tab-bar{display:flex;gap:3px;background:rgba(248,246,255,0.9);border:1px solid rgba(124,58,237,0.12);padding:4px;border-radius:12px;margin-bottom:18px;width:fit-content;}
+  .tab{padding:7px 18px;border-radius:9px;font-size:12.5px;cursor:pointer;color:var(--muted);transition:all 0.2s;font-weight:500;}
+  .tab.active{background:var(--grad1);color:#fff;font-weight:700;box-shadow:0 4px 16px rgba(192,132,252,0.3);}
+
+  /* TABLE TOOLBAR */
+  .table-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .search-box{flex:1;min-width:180px;max-width:300px;display:flex;align-items:center;gap:7px;background:rgba(248,246,255,0.9);border:1px solid rgba(124,58,237,0.12);border-radius:10px;padding:8px 13px;}
+  .search-box input{background:transparent;border:none;color:var(--text);font-size:12.5px;outline:none;width:100%;}
+
+  /* TOAST */
+  .toast-container{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+  .toast{background:rgba(255,255,255,0.98);border:1px solid rgba(124,58,237,0.15);border-radius:12px;padding:12px 18px;font-size:12.5px;display:flex;align-items:center;gap:9px;box-shadow:0 8px 30px rgba(124,58,237,0.1);animation:slideIn 0.3s ease;min-width:240px;}
+  .toast.success{border-color:rgba(22,163,74,0.25);} .toast.error{border-color:rgba(219,39,119,0.25);}
+  @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+  /* SPINNER */
+  .spinner{width:17px;height:17px;border:2px solid rgba(124,58,237,0.15);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* EMPTY STATE */
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state .icon{font-size:48px;margin-bottom:12px;opacity:0.4;}
+  .empty-state h3{font-family:'Syne',sans-serif;font-size:15px;color:var(--text);margin-bottom:5px;}
+
+  /* CONFIRM */
+  .confirm-modal{max-width:400px;}
+
+  /* ── EXCEL IMPORT ZONE ── */
+  .excel-drop-zone{border:2px dashed rgba(124,58,237,0.2);border-radius:14px;padding:36px 24px;text-align:center;cursor:pointer;transition:all 0.25s;background:rgba(124,58,237,0.03);position:relative;}
+  .excel-drop-zone:hover,.excel-drop-zone.dragover{border-color:var(--accent);background:rgba(124,58,237,0.06);box-shadow:0 0 30px rgba(192,132,252,0.1);}
+  .excel-drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .excel-drop-icon{font-size:44px;margin-bottom:12px;}
+  .excel-drop-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:4px;}
+  .excel-drop-sub{font-size:12px;color:var(--muted);}
+  .excel-preview{background:rgba(248,246,255,0.95);border:1px solid rgba(124,58,237,0.1);border-radius:12px;padding:16px;margin-top:14px;display:none;}
+  .excel-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .excel-preview-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);}
+  .excel-preview-table{width:100%;border-collapse:collapse;font-size:11.5px;max-height:220px;overflow-y:auto;display:block;}
+  .excel-preview-table th{background:rgba(124,58,237,0.05);padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid rgba(124,58,237,0.1);}
+  .excel-preview-table td{padding:7px 10px;border-bottom:1px solid rgba(192,132,252,0.05);white-space:nowrap;}
+  .excel-map-section{margin-top:14px;padding-top:14px;border-top:1px solid rgba(124,58,237,0.1);}
+  .excel-map-grid{display:grid;grid-template-columns:1fr 1px 1fr;gap:0;margin-bottom:12px;}
+  .excel-map-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 8px 6px;}
+  .col-map-row{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:8px;}
+  .col-map-arrow{color:var(--accent);font-size:14px;}
+  .col-map-row select{font-size:12px;padding:6px 9px;}
+  .import-summary{background:rgba(124,58,237,0.05);border:1px solid rgba(124,58,237,0.15);border-radius:10px;padding:12px 16px;margin-top:10px;font-size:13px;display:none;}
+
+  /* ── LATEST JOBS SECTION ── */
+  .latest-jobs-hero{background:linear-gradient(135deg,rgba(219,39,119,0.06),rgba(234,88,12,0.05),rgba(124,58,237,0.05));border:1px solid rgba(219,39,119,0.15);border-radius:18px;padding:26px;margin-bottom:22px;position:relative;overflow:hidden;}
+  .latest-jobs-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(244,114,182,0.12),transparent 70%);pointer-events:none;}
+  .latest-jobs-hero::after{content:'';position:absolute;bottom:-20px;left:-20px;width:100px;height:100px;background:radial-gradient(circle,rgba(251,146,60,0.08),transparent 70%);pointer-events:none;}
+  .lj-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .lj-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .lj-subtitle{font-size:12px;color:var(--muted);margin-top:3px;}
+  .degree-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .degree-chip{padding:7px 16px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid rgba(192,132,252,0.15);background:rgba(124,58,237,0.05);color:var(--muted);transition:all 0.22s;font-family:'DM Mono',monospace;font-weight:500;}
+  .degree-chip:hover{color:var(--text);border-color:rgba(124,58,237,0.25);}
+  .degree-chip.active{font-weight:700;}
+  .degree-chip[data-degree="B.Tech"].active{background:rgba(124,58,237,0.1);border-color:var(--accent);color:var(--accent);}
+  .degree-chip[data-degree="MBA"].active{background:rgba(250,204,21,0.15);border-color:var(--accent6);color:var(--accent6);}
+  .degree-chip[data-degree="MCA"].active{background:rgba(56,189,248,0.15);border-color:var(--accent4);color:var(--accent4);}
+  .degree-chip[data-degree="BCA"].active{background:rgba(74,222,128,0.15);border-color:#4ade80;color:#16a34a;}
+  .degree-chip[data-degree="B.Com"].active{background:rgba(251,146,60,0.15);border-color:var(--accent3);color:var(--accent3);}
+  .degree-chip[data-degree="BBA"].active{background:rgba(244,114,182,0.15);border-color:var(--accent2);color:var(--accent2);}
+  .degree-chip[data-degree="All"].active{background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(219,39,119,0.1));border-color:var(--accent);color:var(--accent);}
+  .lj-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .lj-search{flex:1;min-width:200px;}
+  .lj-status-bar{display:flex;align-items:center;gap:8px;padding:9px 15px;background:rgba(250,204,21,0.06);border:1px solid rgba(250,204,21,0.18);border-radius:10px;font-size:12px;margin-bottom:16px;display:none;}
+  .lj-status-bar.visible{display:flex;}
+
+  /* JD CARDS */
+  .jd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px;}
+  .jd-card{background:rgba(255,255,255,0.97);border:1px solid rgba(124,58,237,0.1);border-radius:16px;box-shadow:0 2px 12px rgba(124,58,237,0.05);padding:20px;position:relative;transition:border-color 0.25s,box-shadow 0.25s;}
+  .jd-card:hover{border-color:rgba(192,132,252,0.25);box-shadow:0 8px 32px rgba(192,132,252,0.08);}
+  .jd-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .jd-company{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+  .jd-role{font-size:12.5px;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-top:2px;font-weight:600;}
+  .jd-meta{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0;}
+  .jd-meta-item{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px;}
+  .jd-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px;}
+  .jd-skills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+  .jd-skill{padding:3px 9px;border-radius:20px;font-size:10.5px;background:rgba(2,132,199,0.08);color:var(--accent4);border:1px solid rgba(2,132,199,0.15);}
+  .jd-source{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+  .jd-card-actions{display:flex;gap:5px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(124,58,237,0.08);}
+  .jd-degree-badge{padding:3px 9px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;}
+
+  /* AI FETCH BOX */
+  .ai-fetch-box{background:rgba(124,58,237,0.04);border:1px solid rgba(124,58,237,0.12);border-radius:14px;padding:16px;margin-bottom:14px;}
+  .ai-result{background:rgba(248,246,255,0.9);border:1px solid rgba(124,58,237,0.1);border-radius:12px;padding:14px;margin-top:10px;font-size:12.5px;line-height:1.7;display:none;}
+  .ai-result.visible{display:block;}
+  .ai-result h4{font-family:'Syne',sans-serif;font-size:14px;margin-bottom:7px;color:var(--accent);}
+  .portal-strip{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .portal-btn{padding:7px 14px;border-radius:10px;font-size:11.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid rgba(124,58,237,0.12);background:rgba(124,58,237,0.04);color:var(--muted);transition:all 0.2s;font-weight:500;}
+  .portal-btn:hover{color:var(--text);border-color:rgba(192,132,252,0.25);}
+  .portal-btn.selected{border-color:var(--accent);color:var(--accent);background:rgba(124,58,237,0.08);}
+
+  /* ── CERTIFICATE BUTTON & DROPDOWN ── */
+  .cert-btn-wrap{position:relative;display:inline-flex;}
+  .btn-certificate{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;font-weight:700;
+    box-shadow:0 4px 20px rgba(14,165,233,0.35);display:flex;align-items:center;gap:6px;cursor:pointer;
+    padding:8px 16px;border-radius:10px;font-size:12.5px;border:none;font-family:'Plus Jakarta Sans',sans-serif;
+    transition:all 0.2s;}
+  .btn-certificate::after{content:' ▾';font-size:10px;opacity:0.85;}
+  .btn-certificate:hover{opacity:0.9;box-shadow:0 6px 28px rgba(14,165,233,0.45);}
+  .cert-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:#fff;
+    border:1px solid rgba(99,102,241,0.18);border-radius:14px;padding:8px;
+    box-shadow:0 20px 60px rgba(99,102,241,0.18),0 4px 20px rgba(0,0,0,0.1);
+    min-width:240px;z-index:9999;display:none;animation:dropIn 0.2s ease;}
+  .cert-dropdown.open{display:block;}
+  @keyframes dropIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+  .cert-dropdown-title{font-size:9.5px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);
+    font-weight:700;padding:4px 10px 8px;border-bottom:1px solid rgba(99,102,241,0.1);margin-bottom:6px;}
+  .cert-dd-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+    cursor:pointer;font-size:13px;font-weight:600;color:var(--text);transition:all 0.18s;border:1px solid transparent;}
+  .cert-dd-item:hover{transform:translateX(3px);}
+  .cert-dd-item .dd-icon{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;
+    justify-content:center;font-size:16px;flex-shrink:0;}
+  .cert-dd-item .dd-info{display:flex;flex-direction:column;}
+  .cert-dd-item .dd-label{font-size:12.5px;font-weight:700;}
+  .cert-dd-item .dd-sub{font-size:10px;color:var(--muted);font-weight:400;}
+  .dd-govt:hover{background:rgba(29,78,216,0.06);border-color:rgba(29,78,216,0.12);}
+  .dd-iit:hover{background:rgba(124,58,237,0.06);border-color:rgba(124,58,237,0.12);}
+  .dd-iim:hover{background:rgba(180,83,9,0.06);border-color:rgba(180,83,9,0.12);}
+  .dd-private:hover{background:rgba(5,150,105,0.06);border-color:rgba(5,150,105,0.12);}
+  .dd-univ:hover{background:rgba(219,39,119,0.06);border-color:rgba(219,39,119,0.12);}
+  .dd-coursera:hover{background:rgba(0,86,211,0.06);border-color:rgba(0,86,211,0.12);}
+  .dd-platform:hover{background:rgba(225,29,72,0.06);border-color:rgba(225,29,72,0.12);}
+
+  /* ── CERTIFICATE MODAL ── */
+  .cert-modal{max-width:1100px;width:96vw;}
+  .cert-hero{border-radius:16px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden;border:1px solid rgba(99,102,241,0.15);}
+  .cert-hero-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+  .cert-hero-sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .cert-hero-emoji{position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:64px;opacity:0.1;}
+  .cert-stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  .cert-stat{background:#fff;border-radius:12px;padding:14px 16px;text-align:center;border:1px solid rgba(99,102,241,0.1);box-shadow:0 2px 8px rgba(99,102,241,0.05);}
+  .cert-stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+  .cert-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+  .cert-filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+  .cert-filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;
+    border:1.5px solid rgba(99,102,241,0.18);color:var(--muted);background:rgba(99,102,241,0.04);transition:all 0.2s;}
+  .cert-filter-tab.active{color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(99,102,241,0.25);}
+  .cert-search{padding:7px 14px;border-radius:20px;border:1.5px solid rgba(99,102,241,0.18);
+    font-size:12.5px;outline:none;color:var(--text);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;
+    margin-left:auto;width:210px;transition:border-color 0.2s;}
+  .cert-search:focus{border-color:rgba(99,102,241,0.4);}
+  .cert-loading{display:none;text-align:center;padding:48px 20px;}
+  .cert-loading.visible{display:block;}
+  .cert-loading-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;margin-top:16px;}
+  .cert-loading-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+  .cert-progress-bar{width:100%;height:6px;background:rgba(99,102,241,0.1);border-radius:10px;overflow:hidden;margin:14px auto 0;max-width:320px;}
+  .cert-progress-fill{height:100%;border-radius:10px;width:0%;transition:width 0.35s ease;}
+  .cert-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .cert-card{background:#fff;border-radius:16px;padding:20px;transition:all 0.25s;
+    position:relative;overflow:hidden;border:1px solid rgba(99,102,241,0.1);
+    box-shadow:0 2px 12px rgba(99,102,241,0.05);}
+  .cert-card:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(99,102,241,0.13);}
+  .cert-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+  .cert-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px;}
+  .cert-provider{font-family:'Syne',sans-serif;font-size:13.5px;font-weight:800;color:var(--text);}
+  .cert-course{font-size:12.5px;font-weight:600;margin-top:3px;}
+  .cert-source-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
+    font-family:'DM Mono',monospace;white-space:nowrap;flex-shrink:0;}
+  .cert-meta{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+  .cert-meta-chip{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);
+    background:rgba(99,102,241,0.05);padding:3px 9px;border-radius:20px;}
+  .cert-desc{font-size:11.5px;color:var(--muted);line-height:1.65;margin:10px 0;}
+  .cert-skills{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;}
+  .cert-skill-tag{padding:3px 9px;border-radius:20px;font-size:10.5px;}
+  .cert-card-footer{display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;padding-top:12px;border-top:1px solid rgba(99,102,241,0.08);}
+  .cert-fee{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;}
+  .cert-duration-text{font-size:10.5px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+  .btn-cert-enroll{color:#fff;padding:7px 15px;border-radius:8px;font-size:11.5px;font-weight:700;
+    border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:opacity 0.2s;
+    text-decoration:none;display:inline-block;}
+  .btn-cert-enroll:hover{opacity:0.85;}
+  .cert-section-head{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+    margin:28px 0 14px;display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:2px solid;}
+  .cert-count-badge{color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;}
+  .cert-empty{text-align:center;padding:60px 20px;display:none;}
+  .cert-empty.visible{display:block;}
+
+  /* source-colour mappings */
+  .cert-card.src-govt::before{background:linear-gradient(90deg,#1d4ed8,#6366f1);}
+  .cert-card.src-iit::before{background:linear-gradient(90deg,#7c3aed,#8b5cf6);}
+  .cert-card.src-iim::before{background:linear-gradient(90deg,#b45309,#d97706);}
+  .cert-card.src-private::before{background:linear-gradient(90deg,#059669,#16a34a);}
+  .cert-card.src-univ::before{background:linear-gradient(90deg,#db2777,#f43f5e);}
+  .cert-card.src-coursera::before{background:linear-gradient(90deg,#0056d3,#0ea5e9);}
+  .cert-card.src-platform::before{background:linear-gradient(90deg,#e11d48,#ea580c);}
+  .cert-source-badge.src-govt{background:rgba(29,78,216,0.1);color:#1d4ed8;border:1px solid rgba(29,78,216,0.2);}
+  .cert-source-badge.src-iit{background:rgba(124,58,237,0.1);color:#7c3aed;border:1px solid rgba(124,58,237,0.2);}
+  .cert-source-badge.src-iim{background:rgba(180,83,9,0.1);color:#b45309;border:1px solid rgba(180,83,9,0.2);}
+  .cert-source-badge.src-private{background:rgba(5,150,105,0.1);color:#059669;border:1px solid rgba(5,150,105,0.2);}
+  .cert-source-badge.src-univ{background:rgba(219,39,119,0.1);color:#db2777;border:1px solid rgba(219,39,119,0.2);}
+  .cert-source-badge.src-coursera{background:rgba(0,86,211,0.1);color:#0056d3;border:1px solid rgba(0,86,211,0.2);}
+  .cert-source-badge.src-platform{background:rgba(225,29,72,0.1);color:#e11d48;border:1px solid rgba(225,29,72,0.2);}
+  .cert-course.src-govt{background:linear-gradient(135deg,#1d4ed8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-course.src-iit{background:linear-gradient(135deg,#7c3aed,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-course.src-iim{background:linear-gradient(135deg,#b45309,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-course.src-private{background:linear-gradient(135deg,#059669,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-course.src-univ{background:linear-gradient(135deg,#db2777,#f43f5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-course.src-coursera{background:linear-gradient(135deg,#0056d3,#0ea5e9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-course.src-platform{background:linear-gradient(135deg,#e11d48,#ea580c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-skill-tag.src-govt{background:rgba(29,78,216,0.07);color:#1d4ed8;border:1px solid rgba(29,78,216,0.14);}
+  .cert-skill-tag.src-iit{background:rgba(124,58,237,0.07);color:#7c3aed;border:1px solid rgba(124,58,237,0.14);}
+  .cert-skill-tag.src-iim{background:rgba(180,83,9,0.07);color:#b45309;border:1px solid rgba(180,83,9,0.14);}
+  .cert-skill-tag.src-private{background:rgba(5,150,105,0.07);color:#059669;border:1px solid rgba(5,150,105,0.14);}
+  .cert-skill-tag.src-univ{background:rgba(219,39,119,0.07);color:#db2777;border:1px solid rgba(219,39,119,0.14);}
+  .cert-skill-tag.src-coursera{background:rgba(0,86,211,0.07);color:#0056d3;border:1px solid rgba(0,86,211,0.14);}
+  .cert-skill-tag.src-platform{background:rgba(225,29,72,0.07);color:#e11d48;border:1px solid rgba(225,29,72,0.14);}
+  .btn-cert-enroll.src-govt{background:linear-gradient(135deg,#1d4ed8,#6366f1);}
+  .btn-cert-enroll.src-iit{background:linear-gradient(135deg,#7c3aed,#8b5cf6);}
+  .btn-cert-enroll.src-iim{background:linear-gradient(135deg,#b45309,#d97706);}
+  .btn-cert-enroll.src-private{background:linear-gradient(135deg,#059669,#16a34a);}
+  .btn-cert-enroll.src-univ{background:linear-gradient(135deg,#db2777,#f43f5e);}
+  .btn-cert-enroll.src-coursera{background:linear-gradient(135deg,#0056d3,#0ea5e9);}
+  .btn-cert-enroll.src-platform{background:linear-gradient(135deg,#e11d48,#ea580c);}
+  .cert-fee.src-govt{color:#1d4ed8;}.cert-fee.src-iit{color:#7c3aed;}
+  .cert-fee.src-iim{color:#b45309;}.cert-fee.src-private{color:#059669;}
+  .cert-fee.src-univ{color:#db2777;}.cert-fee.src-coursera{color:#0056d3;}
+  .cert-fee.src-platform{color:#e11d48;}
+  .cert-section-head.src-govt{border-bottom-color:rgba(29,78,216,0.15);color:#1d4ed8;}
+  .cert-section-head.src-iit{border-bottom-color:rgba(124,58,237,0.15);color:#7c3aed;}
+  .cert-section-head.src-iim{border-bottom-color:rgba(180,83,9,0.15);color:#b45309;}
+  .cert-section-head.src-private{border-bottom-color:rgba(5,150,105,0.15);color:#059669;}
+  .cert-section-head.src-univ{border-bottom-color:rgba(219,39,119,0.15);color:#db2777;}
+  .cert-section-head.src-coursera{border-bottom-color:rgba(0,86,211,0.15);color:#0056d3;}
+  .cert-section-head.src-platform{border-bottom-color:rgba(225,29,72,0.15);color:#e11d48;}
+  .cert-count-badge.src-govt{background:linear-gradient(135deg,#1d4ed8,#6366f1);}
+  .cert-count-badge.src-iit{background:linear-gradient(135deg,#7c3aed,#8b5cf6);}
+  .cert-count-badge.src-iim{background:linear-gradient(135deg,#b45309,#d97706);}
+  .cert-count-badge.src-private{background:linear-gradient(135deg,#059669,#16a34a);}
+  .cert-count-badge.src-univ{background:linear-gradient(135deg,#db2777,#f43f5e);}
+  .cert-count-badge.src-coursera{background:linear-gradient(135deg,#0056d3,#0ea5e9);}
+  .cert-count-badge.src-platform{background:linear-gradient(135deg,#e11d48,#ea580c);}
+  .cert-hero.src-govt{background:linear-gradient(135deg,rgba(29,78,216,0.07),rgba(99,102,241,0.05));border-color:rgba(29,78,216,0.15);}
+  .cert-hero.src-iit{background:linear-gradient(135deg,rgba(124,58,237,0.07),rgba(139,92,246,0.05));border-color:rgba(124,58,237,0.15);}
+  .cert-hero.src-iim{background:linear-gradient(135deg,rgba(180,83,9,0.07),rgba(217,119,6,0.05));border-color:rgba(180,83,9,0.15);}
+  .cert-hero.src-private{background:linear-gradient(135deg,rgba(5,150,105,0.07),rgba(22,163,74,0.05));border-color:rgba(5,150,105,0.15);}
+  .cert-hero.src-univ{background:linear-gradient(135deg,rgba(219,39,119,0.07),rgba(244,63,94,0.05));border-color:rgba(219,39,119,0.15);}
+  .cert-hero.src-coursera{background:linear-gradient(135deg,rgba(0,86,211,0.07),rgba(14,165,233,0.05));border-color:rgba(0,86,211,0.15);}
+  .cert-hero.src-platform{background:linear-gradient(135deg,rgba(225,29,72,0.07),rgba(234,88,12,0.05));border-color:rgba(225,29,72,0.15);}
+  .cert-hero.src-govt .cert-hero-title{background:linear-gradient(135deg,#1d4ed8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-hero.src-iit .cert-hero-title{background:linear-gradient(135deg,#7c3aed,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-hero.src-iim .cert-hero-title{background:linear-gradient(135deg,#b45309,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-hero.src-private .cert-hero-title{background:linear-gradient(135deg,#059669,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-hero.src-univ .cert-hero-title{background:linear-gradient(135deg,#db2777,#f43f5e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-hero.src-coursera .cert-hero-title{background:linear-gradient(135deg,#0056d3,#0ea5e9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .cert-hero.src-platform .cert-hero-title{background:linear-gradient(135deg,#e11d48,#ea580c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+  /* ── INTERNSHIP BUTTON ── */
+  .btn-internship{background:linear-gradient(135deg,#16a34a,#059669);color:#fff;font-weight:700;
+    box-shadow:0 4px 20px rgba(22,163,74,0.35);position:relative;overflow:hidden;}
+  .btn-internship::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+    background:radial-gradient(circle,rgba(255,255,255,0.18) 0%,transparent 60%);
+    animation:shimmer 2.5s ease infinite;}
+  @keyframes shimmer{0%{transform:translateX(-100%) rotate(45deg);}100%{transform:translateX(100%) rotate(45deg);}}
+  .btn-internship:hover{opacity:0.9;box-shadow:0 6px 28px rgba(22,163,74,0.5);}
+  .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;
+    animation:livepulse 1.2s ease infinite;margin-right:2px;box-shadow:0 0 6px rgba(255,255,255,0.8);}
+  @keyframes livepulse{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.5);opacity:0.4;}}
+
+  /* ── INTERNSHIP MODAL ── */
+  .intern-modal{max-width:1100px;width:96vw;}
+  .intern-hero{background:linear-gradient(135deg,rgba(22,163,74,0.08),rgba(5,150,105,0.06));
+    border:1px solid rgba(22,163,74,0.2);border-radius:16px;padding:24px;margin-bottom:20px;position:relative;overflow:hidden;}
+  .intern-hero::before{content:'🎓';position:absolute;right:24px;top:50%;transform:translateY(-50%);
+    font-size:64px;opacity:0.12;}
+  .intern-hero-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
+    background:linear-gradient(135deg,#16a34a,#059669);-webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;background-clip:text;}
+  .intern-hero-sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .intern-filters{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;align-items:center;}
+  .intern-filter-group{display:flex;flex-direction:column;gap:5px;min-width:150px;}
+  .intern-filter-group label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
+  .intern-filter-group select,.intern-filter-group input{padding:8px 12px;border-radius:10px;font-size:12.5px;
+    background:rgba(255,255,255,0.9);border:1px solid rgba(22,163,74,0.2);color:var(--text);
+    font-family:'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color 0.2s;}
+  .intern-filter-group select:focus,.intern-filter-group input:focus{border-color:rgba(22,163,74,0.5);}
+  .btn-fetch-intern{background:linear-gradient(135deg,#16a34a,#059669);color:#fff;font-weight:700;
+    padding:10px 22px;border-radius:12px;border:none;cursor:pointer;font-size:13px;
+    font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:8px;
+    box-shadow:0 4px 16px rgba(22,163,74,0.3);transition:all 0.2s;margin-top:18px;align-self:flex-end;}
+  .btn-fetch-intern:hover{opacity:0.88;box-shadow:0 6px 24px rgba(22,163,74,0.4);}
+  .btn-fetch-intern:disabled{opacity:0.6;cursor:not-allowed;}
+  .intern-stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  .intern-stat{background:rgba(255,255,255,0.9);border:1px solid rgba(22,163,74,0.12);border-radius:12px;
+    padding:14px 16px;text-align:center;}
+  .intern-stat-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;
+    background:linear-gradient(135deg,#16a34a,#059669);-webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;background-clip:text;}
+  .intern-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+  .intern-loading{display:none;text-align:center;padding:40px 20px;}
+  .intern-loading.visible{display:block;}
+  .intern-loading-text{font-family:'Syne',sans-serif;font-size:15px;color:var(--accent);margin-top:14px;font-weight:700;}
+  .intern-loading-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+  .intern-progress-bar{width:100%;height:6px;background:rgba(22,163,74,0.1);border-radius:10px;overflow:hidden;margin-top:14px;max-width:300px;margin-left:auto;margin-right:auto;}
+  .intern-progress-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#16a34a,#059669);width:0%;transition:width 0.4s ease;}
+  .intern-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;}
+  .intern-card{background:#fff;border:1px solid rgba(22,163,74,0.12);border-radius:16px;
+    padding:20px;transition:all 0.25s;position:relative;overflow:hidden;box-shadow:0 2px 12px rgba(22,163,74,0.06);}
+  .intern-card:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(22,163,74,0.14);
+    border-color:rgba(22,163,74,0.25);}
+  .intern-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,#16a34a,#059669);}
+  .intern-card-govt::before{background:linear-gradient(90deg,#1d4ed8,#6366f1);}
+  .intern-card-intl::before{background:linear-gradient(90deg,#db2777,#ea580c);}
+  .intern-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+  .intern-org{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text);line-height:1.2;}
+  .intern-role{font-size:13px;font-weight:600;margin-top:3px;
+    background:linear-gradient(135deg,#16a34a,#059669);-webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;background-clip:text;}
+  .intern-card-govt .intern-role{background:linear-gradient(135deg,#1d4ed8,#6366f1);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .intern-card-intl .intern-role{background:linear-gradient(135deg,#db2777,#ea580c);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .intern-sector-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;
+    font-family:'DM Mono',monospace;white-space:nowrap;flex-shrink:0;}
+  .badge-pvt{background:rgba(22,163,74,0.1);color:#16a34a;border:1px solid rgba(22,163,74,0.2);}
+  .badge-govt{background:rgba(29,78,216,0.1);color:#1d4ed8;border:1px solid rgba(29,78,216,0.2);}
+  .badge-intl{background:rgba(219,39,119,0.1);color:#db2777;border:1px solid rgba(219,39,119,0.2);}
+  .intern-meta{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;}
+  .intern-meta-chip{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);
+    background:rgba(124,58,237,0.05);padding:3px 9px;border-radius:20px;}
+  .intern-desc{font-size:11.5px;color:var(--muted);line-height:1.65;margin:10px 0;}
+  .intern-skills{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0;}
+  .intern-skill-tag{padding:3px 9px;border-radius:20px;font-size:10.5px;
+    background:rgba(22,163,74,0.07);color:#16a34a;border:1px solid rgba(22,163,74,0.15);}
+  .intern-card-footer{display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;padding-top:12px;border-top:1px solid rgba(22,163,74,0.08);}
+  .intern-stipend{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#16a34a;}
+  .intern-deadline{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;}
+  .btn-apply-intern{background:linear-gradient(135deg,#16a34a,#059669);color:#fff;
+    padding:6px 14px;border-radius:8px;font-size:11.5px;font-weight:700;border:none;
+    cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:opacity 0.2s;text-decoration:none;display:inline-block;}
+  .btn-apply-intern:hover{opacity:0.85;}
+  .btn-apply-intern-govt{background:linear-gradient(135deg,#1d4ed8,#6366f1);}
+  .btn-apply-intern-intl{background:linear-gradient(135deg,#db2777,#ea580c);}
+  .intern-section-head{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+    margin:24px 0 14px;display:flex;align-items:center;gap:10px;padding-bottom:10px;
+    border-bottom:2px solid rgba(22,163,74,0.1);}
+  .intern-section-head.govt-head{border-bottom-color:rgba(29,78,216,0.1);}
+  .intern-section-head.intl-head{border-bottom-color:rgba(219,39,119,0.1);}
+  .intern-count-badge{background:linear-gradient(135deg,#16a34a,#059669);color:#fff;
+    padding:3px 10px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;}
+  .intern-count-badge.govt{background:linear-gradient(135deg,#1d4ed8,#6366f1);}
+  .intern-count-badge.intl{background:linear-gradient(135deg,#db2777,#ea580c);}
+  .intern-filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+  .intern-filter-tab{padding:6px 16px;border-radius:20px;font-size:12px;cursor:pointer;font-weight:600;
+    border:1.5px solid rgba(22,163,74,0.2);color:var(--muted);background:rgba(22,163,74,0.04);transition:all 0.2s;}
+  .intern-filter-tab.active{background:linear-gradient(135deg,#16a34a,#059669);color:#fff;border-color:transparent;
+    box-shadow:0 4px 14px rgba(22,163,74,0.3);}
+  .intern-filter-tab:nth-child(2).active,.intern-filter-tab.tab-pvt.active{background:linear-gradient(135deg,#16a34a,#059669);}
+  .intern-filter-tab.tab-govt.active{background:linear-gradient(135deg,#1d4ed8,#6366f1);}
+  .intern-filter-tab.tab-intl.active{background:linear-gradient(135deg,#db2777,#ea580c);}
+  .intern-empty{text-align:center;padding:60px 20px;display:none;}
+  .intern-empty.visible{display:block;}
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">Place<span>IQ</span></div>
+    <div class="logo-sub">Placement Analytics</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Overview</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)">◈ Dashboard</div>
+    <div class="nav-item" onclick="showPage('students',this)">⬡ Students</div>
+    <div class="nav-item" onclick="showPage('companies',this)">◉ Companies</div>
+    <div class="nav-item" onclick="showPage('jobs',this)">◇ Job Opportunities</div>
+    <div class="nav-item" onclick="openInternshipModal()" style="color:#16a34a;font-weight:700;">
+      <span class="live-dot" style="background:#16a34a;box-shadow:0 0 6px rgba(22,163,74,0.7);"></span>
+      🎓 Internships Live
+    </div>
+    <div class="nav-item" onclick="toggleCertSidebar()" style="color:#6366f1;font-weight:700;">🏅 Certificate</div>
+    <div id="certSidebarMenu" style="display:none;background:rgba(99,102,241,0.04);border-radius:0 0 8px 8px;margin:0;padding:4px 0 6px;">
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#1d4ed8;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(29,78,216,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('govt')">🏛️ Govt. of India</div>
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#7c3aed;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(124,58,237,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('iit')">🎓 IITs</div>
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#b45309;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(180,83,9,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('iim')">📊 IIMs</div>
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#059669;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(5,150,105,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('private')">🏢 Private Companies</div>
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#db2777;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(219,39,119,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('univ')">🏫 Universities</div>
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#0056d3;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(0,86,211,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('coursera')">💻 Coursera & More</div>
+      <div style="padding:7px 32px;font-size:12px;cursor:pointer;color:#e11d48;font-weight:600;transition:background 0.15s;border-radius:6px;" onmouseover="this.style.background='rgba(225,29,72,0.07)'" onmouseout="this.style.background=''" onclick="openCertModal('platform')">🌐 Various Platforms</div>
+    </div>
+    <div class="nav-label">Quick Add</div>
+    <div class="nav-item" onclick="openModal('importExcelModal')">📊 Import Excel</div>
+    <div class="nav-item" onclick="openModal('addStudentModal')">⊕ Add Student</div>
+    <div class="nav-item" onclick="openModal('addCompanyModal')">⊕ Add Company</div>
+    <div class="nav-item" onclick="openModal('addJDModal')">⊕ Post JD</div>
+    <div class="nav-label">Tools</div>
+    <div class="nav-item" onclick="downloadExcelTemplate()">⬇ Excel Template</div>
+    <div class="nav-item" onclick="exportData()">▤ Export Data</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="batch-badge">Batch 2025–26</div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px;">PlaceIQ University</p>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1 id="pageTitle">Placement Dashboard</h1>
+      <p id="pageSubtitle">Live analytics · Season 2025–26</p>
+    </div>
+    <div class="topbar-right">
+      <div style="display:flex;align-items:center;gap:6px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.18);border-radius:10px;padding:5px 10px;">
+        <span style="font-size:13px;">🔑</span>
+        <input type="password" id="apiKeyInput" placeholder="Paste Anthropic API Key…"
+          style="background:transparent;border:none;outline:none;font-size:12px;color:var(--text);width:200px;font-family:'DM Mono',monospace;padding:0;"
+          oninput="localStorage.setItem('placeiq_api_key', this.value)"
+        />
+      </div>
+      <button class="btn btn-latest" onclick="goToLatestJobs()">⚡ Latest Jobs</button>
+      <button class="btn btn-internship" onclick="openInternshipModal()"><span class="live-dot"></span> 🎓 Internships</button>
+      <div class="cert-btn-wrap" id="certBtnWrap">
+        <button class="btn btn-certificate" onclick="toggleCertDropdown(event)">🏅 Certificate</button>
+        <div class="cert-dropdown" id="certDropdown">
+          <div class="cert-dropdown-title">Choose Source</div>
+          <div class="cert-dd-item dd-govt" onclick="openCertModal('govt')">
+            <div class="dd-icon" style="background:rgba(29,78,216,0.1);">🏛️</div>
+            <div class="dd-info"><div class="dd-label" style="color:#1d4ed8;">Govt. of India</div><div class="dd-sub">SWAYAM, NPTEL, MoE, NIELIT</div></div>
+          </div>
+          <div class="cert-dd-item dd-iit" onclick="openCertModal('iit')">
+            <div class="dd-icon" style="background:rgba(124,58,237,0.1);">🎓</div>
+            <div class="dd-info"><div class="dd-label" style="color:#7c3aed;">IITs</div><div class="dd-sub">IIT Bombay, Delhi, Madras…</div></div>
+          </div>
+          <div class="cert-dd-item dd-iim" onclick="openCertModal('iim')">
+            <div class="dd-icon" style="background:rgba(180,83,9,0.1);">📊</div>
+            <div class="dd-info"><div class="dd-label" style="color:#b45309;">IIMs</div><div class="dd-sub">IIM Ahmedabad, Bangalore…</div></div>
+          </div>
+          <div class="cert-dd-item dd-private" onclick="openCertModal('private')">
+            <div class="dd-icon" style="background:rgba(5,150,105,0.1);">🏢</div>
+            <div class="dd-info"><div class="dd-label" style="color:#059669;">Private Companies</div><div class="dd-sub">Google, Microsoft, IBM, TCS…</div></div>
+          </div>
+          <div class="cert-dd-item dd-univ" onclick="openCertModal('univ')">
+            <div class="dd-icon" style="background:rgba(219,39,119,0.1);">🏫</div>
+            <div class="dd-info"><div class="dd-label" style="color:#db2777;">Universities</div><div class="dd-sub">Harvard, MIT, IISc, BITS…</div></div>
+          </div>
+          <div class="cert-dd-item dd-coursera" onclick="openCertModal('coursera')">
+            <div class="dd-icon" style="background:rgba(0,86,211,0.1);">💻</div>
+            <div class="dd-info"><div class="dd-label" style="color:#0056d3;">Coursera</div><div class="dd-sub">Coursera, edX, Udemy, LinkedIn</div></div>
+          </div>
+          <div class="cert-dd-item dd-platform" onclick="openCertModal('platform')">
+            <div class="dd-icon" style="background:rgba(225,29,72,0.1);">🌐</div>
+            <div class="dd-info"><div class="dd-label" style="color:#e11d48;">Various Platforms</div><div class="dd-sub">Udacity, Simplilearn, Great Learning…</div></div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-orange" onclick="openModal('importExcelModal')">📊 Import Excel</button>
+      <button class="btn btn-purple" onclick="openModal('addStudentModal')">⊕ Student</button>
+      <button class="btn btn-yellow" onclick="openModal('addCompanyModal')">⊕ Company</button>
+      <button class="btn btn-primary" onclick="openModal('addJDModal')">⊕ Post JD</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DASHBOARD PAGE ═══════════════ -->
+  <div class="page active" id="page-dashboard">
+  <div class="content">
+    <div class="live-ticker">
+      <div class="ticker-dot"></div>
+      <span class="ticker-text">LIVE&nbsp;</span>
+      <span style="color:var(--muted)" id="tickerText">Click ⚡ Latest Jobs to auto-fetch fresh opportunities · Import Excel to bulk add students · Season 2025–26 in progress</span>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="kpi-label">Placed Students</div><div class="kpi-value" id="kpiPlaced">0</div><div class="kpi-change up" id="kpiPlacedPct">—</div></div>
+      <div class="kpi-card"><div class="kpi-label">Avg. Package</div><div class="kpi-value" id="kpiAvgPkg">—</div><div class="kpi-change up">Live from data</div></div>
+      <div class="kpi-card"><div class="kpi-label">Highest Package</div><div class="kpi-value" id="kpiMaxPkg">—</div><div class="kpi-change up">This season</div></div>
+      <div class="kpi-card"><div class="kpi-label">Companies Active</div><div class="kpi-value" id="kpiCompanies">0</div><div class="kpi-change up" id="kpiActiveCo">—</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Offers Timeline</div><div class="chart-card-sub">Monthly offer count</div></div><div class="pill pill-green" id="totalOffersLabel">0 total</div></div>
+        <div class="bar-chart" id="barChart"></div>
+        <div style="display:flex;gap:14px;margin-top:10px;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:9px;height:9px;border-radius:2px;background:var(--accent)"></div>2025–26</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);"><div style="width:9px;height:9px;border-radius:2px;background:var(--accent4)"></div>2023–24</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Branch Distribution</div><div class="chart-card-sub">% placed by branch</div></div></div>
+        <div class="donut-wrap">
+          <svg width="110" height="110" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(124,58,237,0.08)" stroke-width="18"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#c084fc" stroke-width="18" stroke-dasharray="105.6 196" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#a78bfa" stroke-width="18" stroke-dasharray="66.3 234.7" stroke-dashoffset="-105.6" transform="rotate(-90 60 60)"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#facc15" stroke-width="18" stroke-dasharray="45.2 254.8" stroke-dashoffset="-171.9" transform="rotate(-90 60 60)"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#f472b6" stroke-width="18" stroke-dasharray="36.2 263.8" stroke-dashoffset="-217.1" transform="rotate(-90 60 60)"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="#374151" stroke-width="18" stroke-dasharray="48.2 251.8" stroke-dashoffset="-253.3" transform="rotate(-90 60 60)"/>
+            <text x="60" y="55" text-anchor="middle" fill="#1e1040" font-family="Syne" font-size="17" font-weight="800" id="donutPct">—</text>
+            <text x="60" y="69" text-anchor="middle" fill="#6b5e8a" font-family="DM Sans" font-size="9">placed</text>
+          </svg>
+          <div style="flex:1">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>CSE<span class="legend-pct">35%</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>ECE<span class="legend-pct">22%</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent3)"></div>ME<span class="legend-pct">15%</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>EEE<span class="legend-pct">12%</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#374151"></div>Others<span class="legend-pct">16%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="chart-card"><div class="chart-card-header"><div><div class="chart-card-title">Recruitment Funnel</div><div class="chart-card-sub">Batch 2025–26</div></div></div><div id="funnel"></div></div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Salary Distribution</div></div><div class="pill pill-yellow">Median ₹16L</div></div>
+        <div class="salary-bar-row"><span class="salary-label">Below 6L</span><div class="salary-track"><div class="salary-fill" style="width:8%;background:rgba(107,114,128,0.5)"></div></div><span class="salary-text">8%</span></div>
+        <div class="salary-bar-row"><span class="salary-label">6L–12L</span><div class="salary-track"><div class="salary-fill" style="width:22%;background:var(--accent4)"></div></div><span class="salary-text">22%</span></div>
+        <div class="salary-bar-row"><span class="salary-label">12L–20L</span><div class="salary-track"><div class="salary-fill" style="width:38%;background:linear-gradient(90deg,#c084fc,#818cf8)"></div></div><span class="salary-text">38%</span></div>
+        <div class="salary-bar-row"><span class="salary-label">20L–40L</span><div class="salary-track"><div class="salary-fill" style="width:24%;background:linear-gradient(90deg,#fb923c,#f59e0b)"></div></div><span class="salary-text">24%</span></div>
+        <div class="salary-bar-row"><span class="salary-label">Above 40L</span><div class="salary-track"><div class="salary-fill" style="width:8%;background:var(--accent2)"></div></div><span class="salary-text">8%</span></div>
+      </div>
+      <div class="chart-card"><div class="chart-card-header"><div><div class="chart-card-title">Top Roles</div></div></div><div id="topRoles"></div></div>
+    </div>
+    <div class="grid-2-equal">
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Top Recruiters</div></div><div class="pill pill-green" id="companyCountLabel">0</div></div>
+        <table class="data-table"><thead><tr><th>Company</th><th>Offers</th><th>Max CTC</th><th>Status</th></tr></thead><tbody id="dashCompanyBody"></tbody></table>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div><div class="chart-card-title">Activity Heatmap</div></div></div>
+        <div class="heatmap-label-row" id="hmLabels"></div>
+        <div class="heatmap" id="heatmap"></div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:10px;font-size:10px;color:var(--muted);">Less
+          <div style="width:9px;height:9px;border-radius:2px;background:rgba(124,58,237,0.08)"></div>
+          <div style="width:9px;height:9px;border-radius:2px;background:rgba(124,58,237,0.35)"></div>
+          <div style="width:9px;height:9px;border-radius:2px;background:var(--accent)"></div>
+        More</div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ═══════════════ STUDENTS PAGE ═══════════════ -->
+  <div class="page" id="page-students">
+  <div class="content">
+    <div class="page-header">
+      <div><div class="page-title">Student Records</div><div class="page-subtitle">Manage all student placement data</div></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-orange" onclick="openModal('importExcelModal')">📊 Import Excel</button>
+        <button class="btn btn-primary" onclick="openModal('addStudentModal')">⊕ Add Student</button>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-val" id="sTotalStudents" style="background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent">0</div><div class="stat-label">Total Students</div></div>
+      <div class="stat-card"><div class="stat-val" id="sPlaced" style="color:#4ade80">0</div><div class="stat-label">Placed</div></div>
+      <div class="stat-card"><div class="stat-val" id="sUnplaced" style="color:var(--accent2)">0</div><div class="stat-label">Unplaced</div></div>
+      <div class="stat-card"><div class="stat-val" id="sAvgPkg" style="background:var(--grad3);-webkit-background-clip:text;-webkit-text-fill-color:transparent">—</div><div class="stat-label">Avg Package</div></div>
+    </div>
+    <div class="chart-card">
+      <div class="table-toolbar">
+        <div class="search-box"><span style="color:var(--muted)">⌕</span><input placeholder="Search name, roll, branch…" oninput="filterStudents(this.value)"></div>
+        <select onchange="filterStudentStatus(this.value)" style="width:130px;padding:7px 10px;"><option value="">All Status</option><option>Placed</option><option>Unplaced</option><option>Intern</option></select>
+        <select onchange="filterStudentBranch(this.value)" style="width:130px;padding:7px 10px;"><option value="">All Branches</option><option>CSE</option><option>ECE</option><option>ME</option><option>EEE</option><option>Civil</option><option>IT</option><option>MBA</option><option>MCA</option><option>BCA</option><option>B.Com</option><option>BBA</option></select>
+        <button class="btn btn-ghost btn-sm" onclick="exportStudentsExcel()">⬇ Export Excel</button>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Student</th><th>Roll No</th><th>Branch</th><th>CGPA</th><th>Company</th><th>Package</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="studentTableBody"></tbody>
+      </table>
+      <div id="studentEmpty" class="empty-state" style="display:none"><div class="icon">🎓</div><h3>No students yet</h3><p>Import Excel file or add individual students</p></div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ═══════════════ COMPANIES PAGE ═══════════════ -->
+  <div class="page" id="page-companies">
+  <div class="content">
+    <div class="page-header">
+      <div><div class="page-title">Company Directory</div><div class="page-subtitle">Recruiting companies this season</div></div>
+      <button class="btn btn-primary" onclick="openModal('addCompanyModal')">⊕ Add Company</button>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-val" id="cTotal" style="background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent">0</div><div class="stat-label">Total</div></div>
+      <div class="stat-card"><div class="stat-val" id="cActive" style="color:#4ade80">0</div><div class="stat-label">Active</div></div>
+      <div class="stat-card"><div class="stat-val" id="cUpcoming" style="background:var(--grad3);-webkit-background-clip:text;-webkit-text-fill-color:transparent">0</div><div class="stat-label">Upcoming</div></div>
+      <div class="stat-card"><div class="stat-val" id="cTotalOffers" style="background:var(--grad4);-webkit-background-clip:text;-webkit-text-fill-color:transparent">0</div><div class="stat-label">Total Offers</div></div>
+    </div>
+    <div class="chart-card">
+      <div class="table-toolbar">
+        <div class="search-box"><span style="color:var(--muted)">⌕</span><input placeholder="Search company…" oninput="filterCompanies(this.value)"></div>
+        <select onchange="filterCompanyStatus(this.value)" style="width:130px;padding:7px 10px;"><option value="">All Status</option><option>Active</option><option>Upcoming</option><option>Closed</option></select>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>Company</th><th>Sector</th><th>CTC Range</th><th>Offers</th><th>Drive Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="companyTableBody"></tbody>
+      </table>
+      <div id="companyEmpty" class="empty-state" style="display:none"><div class="icon">🏢</div><h3>No companies yet</h3><p>Add a company to get started</p></div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ═══════════════ JOBS PAGE ═══════════════ -->
+  <div class="page" id="page-jobs">
+  <div class="content">
+    <div class="page-header">
+      <div><div class="page-title">Job Opportunities</div><div class="page-subtitle">Auto-fetched & manually curated JDs for all degree programs</div></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-latest" onclick="fetchLatestJobs()" id="latestJobsBtn">⚡ Latest Jobs</button>
+        <button class="btn btn-primary" onclick="openModal('addJDModal')">⊕ Post JD</button>
+      </div>
+    </div>
+
+    <!-- LATEST JOBS HERO -->
+    <div class="latest-jobs-hero">
+      <div class="lj-header">
+        <div>
+          <div class="lj-title">⚡ Auto Job Fetcher — All Degrees</div>
+          <div class="lj-subtitle">Click a degree → AI fetches latest jobs from LinkedIn, Naukri, Indeed, Internshala & more</div>
+        </div>
+        <button class="btn btn-latest" onclick="fetchLatestJobs()" id="latestJobsBtn2" style="white-space:nowrap;">⚡ Fetch Latest Jobs</button>
+      </div>
+      <div class="degree-chips">
+        <div class="degree-chip active" data-degree="All" onclick="selectDegree(this)">🎓 All Degrees</div>
+        <div class="degree-chip" data-degree="B.Tech" onclick="selectDegree(this)">⚙️ B.Tech</div>
+        <div class="degree-chip" data-degree="MBA" onclick="selectDegree(this)">💼 MBA</div>
+        <div class="degree-chip" data-degree="MCA" onclick="selectDegree(this)">💻 MCA</div>
+        <div class="degree-chip" data-degree="BCA" onclick="selectDegree(this)">🖥️ BCA</div>
+        <div class="degree-chip" data-degree="B.Com" onclick="selectDegree(this)">📊 B.Com</div>
+        <div class="degree-chip" data-degree="BBA" onclick="selectDegree(this)">📈 BBA</div>
+      </div>
+      <div class="lj-controls">
+        <input class="lj-search" type="text" placeholder="Optional: narrow search (e.g. 'Python Developer Delhi', 'Finance Analyst')" id="ljCustomQuery" style="padding:8px 12px;">
+        <select id="ljLocation" style="width:150px;padding:8px 12px;"><option value="">Any Location</option><option>Delhi NCR</option><option>Bangalore</option><option>Mumbai</option><option>Hyderabad</option><option>Pune</option><option>Chennai</option><option>Remote</option></select>
+        <select id="ljJobType" style="width:140px;padding:8px 12px;"><option value="">All Types</option><option>Full-Time</option><option>Internship</option><option>Part-Time</option></select>
+      </div>
+      <div class="lj-status-bar" id="ljStatusBar"><span class="spinner"></span><span id="ljStatusText">Fetching latest jobs…</span></div>
+    </div>
+
+    <!-- PORTAL FILTER -->
+    <div class="portal-strip" id="portalStrip">
+      <div class="portal-btn selected" data-portal="LinkedIn">🔵 LinkedIn</div>
+      <div class="portal-btn selected" data-portal="Naukri">🟠 Naukri</div>
+      <div class="portal-btn selected" data-portal="Indeed">🔴 Indeed</div>
+      <div class="portal-btn" data-portal="Internshala">🟣 Internshala</div>
+      <div class="portal-btn" data-portal="Glassdoor">🟢 Glassdoor</div>
+      <div class="portal-btn" data-portal="Shine">⭐ Shine</div>
+      <div class="portal-btn" data-portal="Monster">👾 Monster</div>
+      <div class="portal-btn" data-portal="Freshersworld">🆕 Freshersworld</div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab active" onclick="switchJobTab('all',this)">All JDs</div>
+      <div class="tab" onclick="switchJobTab('B.Tech',this)">B.Tech</div>
+      <div class="tab" onclick="switchJobTab('MBA',this)">MBA</div>
+      <div class="tab" onclick="switchJobTab('MCA',this)">MCA</div>
+      <div class="tab" onclick="switchJobTab('BCA',this)">BCA</div>
+      <div class="tab" onclick="switchJobTab('B.Com',this)">B.Com</div>
+      <div class="tab" onclick="switchJobTab('BBA',this)">BBA</div>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="search-box"><span style="color:var(--muted)">⌕</span><input placeholder="Search JDs…" oninput="filterJDs(this.value)"></div>
+      <select onchange="filterJDSource(this.value)" style="width:150px;padding:7px 10px;"><option value="">All Sources</option><option>LinkedIn</option><option>Naukri</option><option>Indeed</option><option>Internshala</option><option>AI Generated</option><option>Manual</option></select>
+      <span style="font-size:12px;color:var(--muted)" id="jdCount">0 jobs</span>
+    </div>
+
+    <div class="jd-grid" id="jdGrid"></div>
+    <div id="jdEmpty" class="empty-state" style="display:none"><div class="icon">💼</div><h3>No job descriptions yet</h3><p>Click ⚡ Latest Jobs to auto-fetch fresh opportunities</p></div>
+  </div>
+  </div>
+
+</main>
+
+<!-- ═══════ MODAL: IMPORT EXCEL ═══════ -->
+<div class="modal-overlay" id="importExcelModal">
+  <div class="modal" style="max-width:760px;">
+    <div class="modal-header">
+      <div class="modal-title">📊 Import Students from Excel / CSV</div>
+      <button class="modal-close" onclick="closeModal('importExcelModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(255,209,102,0.06);border:1px solid rgba(255,209,102,0.15);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12.5px;">
+        <strong style="color:var(--accent3);">📋 Supported formats:</strong> .xlsx, .xls, .csv &nbsp;|&nbsp;
+        <strong style="color:var(--accent3);">Required columns:</strong> Name, Roll No, Branch, CGPA &nbsp;|&nbsp;
+        <a href="#" onclick="downloadExcelTemplate();return false;" style="color:var(--accent);">⬇ Download template</a>
+      </div>
+
+      <div class="excel-drop-zone" id="dropZone" ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="this.classList.remove('dragover')">
+        <input type="file" accept=".xlsx,.xls,.csv" onchange="handleFileSelect(event)">
+        <div class="excel-drop-icon">📂</div>
+        <div class="excel-drop-title">Drop Excel / CSV file here</div>
+        <div class="excel-drop-sub">or click to browse · Supports .xlsx, .xls, .csv</div>
+      </div>
+
+      <div class="excel-preview" id="excelPreview">
+        <div class="excel-preview-header">
+          <div class="excel-preview-title" id="previewTitle">Preview</div>
+          <span id="previewCount" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="excel-preview-table" id="previewTable"></table>
+        </div>
+        <div class="excel-map-section">
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:10px;">🔗 Map Columns</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Match your Excel column names to PlaceIQ fields:</div>
+          <div id="columnMapping"></div>
+        </div>
+        <div class="import-summary" id="importSummary"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('importExcelModal')">Cancel</button>
+      <button class="btn btn-ghost" onclick="downloadExcelTemplate()">⬇ Template</button>
+      <button class="btn btn-primary" onclick="importStudents()" id="importBtn" disabled>Import Students</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL: ADD STUDENT ═══════ -->
+<div class="modal-overlay" id="addStudentModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Student</div><button class="modal-close" onclick="closeModal('addStudentModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input id="s_name" placeholder="e.g. Arjun Mehta"></div>
+        <div class="form-group"><label>Roll Number *</label><input id="s_roll" placeholder="e.g. 21CS001"></div>
+        <div class="form-group"><label>Degree</label>
+          <select id="s_degree"><option>B.Tech</option><option>MBA</option><option>MCA</option><option>BCA</option><option>B.Com</option><option>BBA</option><option>M.Tech</option><option>B.Sc</option></select>
+        </div>
+        <div class="form-group"><label>Branch/Specialization *</label>
+          <select id="s_branch"><option value="">Select</option><option>CSE</option><option>ECE</option><option>ME</option><option>EEE</option><option>Civil</option><option>IT</option><option>Finance</option><option>Marketing</option><option>HR</option><option>Operations</option><option>Data Science</option><option>Commerce</option></select>
+        </div>
+        <div class="form-group"><label>CGPA</label><input id="s_cgpa" type="number" min="0" max="10" step="0.01" placeholder="e.g. 8.75"></div>
+        <div class="form-group"><label>Email</label><input id="s_email" type="email" placeholder="student@univ.edu"></div>
+        <div class="form-group"><label>Phone</label><input id="s_phone" placeholder="+91 9XXXXXXXXX"></div>
+        <div class="form-group"><label>Gender</label><select id="s_gender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <hr class="form-divider">
+        <div class="form-group"><label>Placement Status</label><select id="s_status"><option>Unplaced</option><option>Placed</option><option>Intern</option></select></div>
+        <div class="form-group"><label>Placed Company</label><input id="s_company" placeholder="Company (if placed)"></div>
+        <div class="form-group"><label>Package (LPA)</label><input id="s_package" type="number" min="0" placeholder="e.g. 18"></div>
+        <div class="form-group"><label>Offer Date</label><input id="s_offerDate" type="date"></div>
+        <div class="form-group full"><label>Skills</label><input id="s_skills" placeholder="Python, React, DSA, ML…"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="s_notes" placeholder="Notes…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addStudentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT STUDENT -->
+<div class="modal-overlay" id="editStudentModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Edit Student</div><button class="modal-close" onclick="closeModal('editStudentModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="es_id">
+      <div class="form-grid">
+        <div class="form-group"><label>Full Name *</label><input id="es_name"></div>
+        <div class="form-group"><label>Roll Number</label><input id="es_roll"></div>
+        <div class="form-group"><label>Degree</label><select id="es_degree"><option>B.Tech</option><option>MBA</option><option>MCA</option><option>BCA</option><option>B.Com</option><option>BBA</option><option>M.Tech</option><option>B.Sc</option></select></div>
+        <div class="form-group"><label>Branch</label><select id="es_branch"><option>CSE</option><option>ECE</option><option>ME</option><option>EEE</option><option>Civil</option><option>IT</option><option>Finance</option><option>Marketing</option><option>HR</option><option>Operations</option><option>Data Science</option></select></div>
+        <div class="form-group"><label>CGPA</label><input id="es_cgpa" type="number" step="0.01"></div>
+        <div class="form-group"><label>Email</label><input id="es_email" type="email"></div>
+        <div class="form-group"><label>Phone</label><input id="es_phone"></div>
+        <div class="form-group"><label>Status</label><select id="es_status"><option>Unplaced</option><option>Placed</option><option>Intern</option></select></div>
+        <div class="form-group"><label>Company</label><input id="es_company"></div>
+        <div class="form-group"><label>Package (LPA)</label><input id="es_package" type="number"></div>
+        <div class="form-group"><label>Offer Date</label><input id="es_offerDate" type="date"></div>
+        <div class="form-group"><label>Gender</label><select id="es_gender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+        <div class="form-group full"><label>Skills</label><input id="es_skills"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="es_notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editStudentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="updateStudent()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD COMPANY -->
+<div class="modal-overlay" id="addCompanyModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Company</div><button class="modal-close" onclick="closeModal('addCompanyModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Company Name *</label><input id="c_name" placeholder="e.g. Google India"></div>
+        <div class="form-group"><label>Sector *</label><select id="c_sector"><option value="">Select</option><option>Technology</option><option>Finance</option><option>Consulting</option><option>Core</option><option>Product</option><option>E-Commerce</option><option>Startup</option><option>BFSI</option><option>Analytics</option></select></div>
+        <div class="form-group"><label>HR Contact</label><input id="c_hr" placeholder="HR name"></div>
+        <div class="form-group"><label>HR Email</label><input id="c_hrEmail" type="email" placeholder="hr@company.com"></div>
+        <div class="form-group"><label>Min CTC (LPA)</label><input id="c_minCtc" type="number"></div>
+        <div class="form-group"><label>Max CTC (LPA)</label><input id="c_maxCtc" type="number"></div>
+        <div class="form-group"><label>Drive Date</label><input id="c_driveDate" type="date"></div>
+        <div class="form-group"><label>Status</label><select id="c_status"><option>Upcoming</option><option>Active</option><option>Closed</option></select></div>
+        <div class="form-group full"><label>Roles Offered</label><input id="c_roles" placeholder="SWE, Data Analyst, PM…"></div>
+        <div class="form-group full"><label>Description</label><textarea id="c_notes" placeholder="Notes about process, culture…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addCompanyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCompany()">Save Company</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT COMPANY -->
+<div class="modal-overlay" id="editCompanyModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Edit Company</div><button class="modal-close" onclick="closeModal('editCompanyModal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ec_id">
+      <div class="form-grid">
+        <div class="form-group"><label>Company Name *</label><input id="ec_name"></div>
+        <div class="form-group"><label>Sector</label><select id="ec_sector"><option>Technology</option><option>Finance</option><option>Consulting</option><option>Core</option><option>Product</option><option>E-Commerce</option><option>Startup</option><option>BFSI</option><option>Analytics</option></select></div>
+        <div class="form-group"><label>HR Contact</label><input id="ec_hr"></div>
+        <div class="form-group"><label>HR Email</label><input id="ec_hrEmail" type="email"></div>
+        <div class="form-group"><label>Min CTC (LPA)</label><input id="ec_minCtc" type="number"></div>
+        <div class="form-group"><label>Max CTC (LPA)</label><input id="ec_maxCtc" type="number"></div>
+        <div class="form-group"><label>Drive Date</label><input id="ec_driveDate" type="date"></div>
+        <div class="form-group"><label>Status</label><select id="ec_status"><option>Upcoming</option><option>Active</option><option>Closed</option></select></div>
+        <div class="form-group full"><label>Roles</label><input id="ec_roles"></div>
+        <div class="form-group full"><label>Notes</label><textarea id="ec_notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editCompanyModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="updateCompany()">Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD JD -->
+<div class="modal-overlay" id="addJDModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Post Job Description</div><button class="modal-close" onclick="closeModal('addJDModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Company *</label><input id="jd_company" placeholder="Company name"></div>
+        <div class="form-group"><label>Job Role *</label><input id="jd_role" placeholder="e.g. Data Scientist"></div>
+        <div class="form-group"><label>Location</label><input id="jd_location" placeholder="Bangalore / Remote"></div>
+        <div class="form-group"><label>CTC / Stipend</label><input id="jd_ctc" placeholder="₹18–24 LPA"></div>
+        <div class="form-group"><label>Type</label><select id="jd_type"><option>Full-Time</option><option>Internship</option><option>Part-Time</option></select></div>
+        <div class="form-group"><label>Drive Type</label><select id="jd_drive"><option>Campus Drive</option><option>Off Campus</option><option>Pool Campus</option></select></div>
+        <div class="form-group"><label>Degree Applicable</label>
+          <select id="jd_degree"><option value="All">All Degrees</option><option>B.Tech</option><option>MBA</option><option>MCA</option><option>BCA</option><option>B.Com</option><option>BBA</option></select>
+        </div>
+        <div class="form-group"><label>Deadline</label><input id="jd_deadline" type="date"></div>
+        <div class="form-group"><label>Source</label><select id="jd_source"><option>Manual</option><option>LinkedIn</option><option>Naukri</option><option>Indeed</option><option>Internshala</option><option>Glassdoor</option></select></div>
+        <div class="form-group"><label>Min CGPA</label><input id="jd_minCgpa" type="number" step="0.01" placeholder="7.0"></div>
+        <div class="form-group full"><label>Apply URL</label><input id="jd_url" placeholder="https://…"></div>
+        <div class="form-group full"><label>Required Skills</label><input id="jd_skills" placeholder="Python, SQL, Excel…"></div>
+        <div class="form-group full"><label>Job Description *</label><textarea id="jd_desc" style="min-height:110px;" placeholder="Full job description…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addJDModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveJDManual()">Save JD</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal confirm-modal">
+    <div class="modal-body" style="padding:30px 24px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:10px;">🗑️</div>
+      <h3 style="font-family:'Syne',sans-serif;margin-bottom:7px;" id="confirmTitle">Delete?</h3>
+      <p style="font-size:13px;color:var(--muted);" id="confirmMsg">This cannot be undone.</p>
+    </div>
+    <div class="modal-footer" style="justify-content:center;">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// API KEY RESTORE
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function(){
+  var saved = localStorage.getItem('placeiq_api_key');
+  if(saved){ var inp = document.getElementById('apiKeyInput'); if(inp) inp.value = saved; }
+});
+
+// ══════════════════════════════════════════
+// DATA STORE
+// ══════════════════════════════════════════
+let students = [
+  {id:1,name:'Arjun Mehta',roll:'21CS001',degree:'B.Tech',branch:'CSE',cgpa:9.1,email:'arjun@univ.edu',phone:'+91 9876543210',gender:'Male',status:'Placed',company:'Google',package:42,offerDate:'2025-01-15',skills:'Python, ML, DSA',notes:''},
+  {id:2,name:'Priya Sharma',roll:'21CS042',degree:'B.Tech',branch:'CSE',cgpa:8.7,email:'priya@univ.edu',phone:'+91 9123456789',gender:'Female',status:'Placed',company:'Microsoft',package:35,offerDate:'2025-01-20',skills:'Java, Spring',notes:''},
+  {id:3,name:'Rohan Das',roll:'21EC015',degree:'B.Tech',branch:'ECE',cgpa:7.9,email:'rohan@univ.edu',phone:'+91 9988776655',gender:'Male',status:'Placed',company:'Qualcomm',package:22,offerDate:'2025-02-05',skills:'VLSI, Embedded C',notes:''},
+  {id:4,name:'Sneha Patel',roll:'22MBA01',degree:'MBA',branch:'Finance',cgpa:8.2,email:'sneha@univ.edu',phone:'+91 9345678901',gender:'Female',status:'Intern',company:'HDFC Bank',package:8,offerDate:'2025-01-10',skills:'Finance, Excel',notes:'PPO expected'},
+  {id:5,name:'Vikram Singh',roll:'21CS078',degree:'B.Tech',branch:'CSE',cgpa:7.4,email:'vikram@univ.edu',phone:'',gender:'Male',status:'Unplaced',company:'',package:0,offerDate:'',skills:'C++, React',notes:''},
+  {id:6,name:'Anjali Nair',roll:'22MCA04',degree:'MCA',branch:'IT',cgpa:8.5,email:'anjali@univ.edu',phone:'',gender:'Female',status:'Placed',company:'Infosys',package:6.5,offerDate:'2025-02-10',skills:'Java, Python, SQL',notes:''},
+];
+let companies = [
+  {id:1,name:'Google',sector:'Technology',hr:'Neha Gupta',hrEmail:'neha@google.com',minCtc:35,maxCtc:55,driveDate:'2025-01-15',status:'Active',roles:'SWE, ML Engineer',notes:'GFG + 3 interviews'},
+  {id:2,name:'Amazon',sector:'E-Commerce',hr:'Rahul Verma',hrEmail:'rahul@amazon.com',minCtc:28,maxCtc:45,driveDate:'2025-03-03',status:'Upcoming',roles:'SDE-I, Data Engineer',notes:'4 rounds'},
+  {id:3,name:'Deloitte',sector:'Consulting',hr:'Kapil Bansal',hrEmail:'kapil@deloitte.com',minCtc:12,maxCtc:18,driveDate:'2025-02-20',status:'Active',roles:'Analyst, Consultant',notes:'Case study round'},
+];
+let jobDescriptions = [
+  {id:1,company:'TCS',role:'IT Analyst',location:'Pan India',ctc:'₹7 LPA',type:'Full-Time',drive:'Campus Drive',degree:'B.Tech',deadline:'2025-04-01',source:'Naukri',url:'https://nextstep.tcs.com',skills:['Java','SQL','Communication'],minCgpa:6.0,desc:'Join TCS as IT Analyst. Work on enterprise application development and client delivery projects across domains.',addedDate:'2025-02-28'},
+  {id:2,company:'Deloitte',role:'Business Analyst',location:'Bangalore / Mumbai',ctc:'₹12–16 LPA',type:'Full-Time',drive:'Campus Drive',degree:'MBA',deadline:'2025-03-20',source:'LinkedIn',url:'https://deloitte.com/careers',skills:['Excel','PowerPoint','Consulting','Finance'],minCgpa:7.0,desc:'MBA Business Analyst role in Deloitte\'s Strategy & Operations practice. Engage with top corporate clients.',addedDate:'2025-02-28'},
+];
+let nextStudentId = 7, nextCompanyId = 4, nextJDId = 3;
+let filteredStudents=[...students], filteredCompanies=[...companies], filteredJDs=[...jobDescriptions];
+let currentJDTab='all', selectedDegree='All', selectedPortals=['LinkedIn','Naukri','Indeed'];
+let excelData=[], excelHeaders=[], columnMappings={};
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function showPage(page,el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'Placement Dashboard',students:'Student Records',companies:'Company Directory',jobs:'Job Opportunities'};
+  document.getElementById('pageTitle').textContent=titles[page]||page;
+  if(page==='students'){renderStudentTable(filteredStudents);updateStudentStats();}
+  if(page==='companies'){renderCompanyTable(filteredCompanies);updateCompanyStats();}
+  if(page==='jobs') renderJDGrid(filteredJDs);
+  if(page==='dashboard') updateDashboard();
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))closeModal(e.target.id);});
+
+// ══════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════
+function toast(msg,type='success'){
+  const tc=document.getElementById('toastContainer');
+  const t=document.createElement('div');t.className=`toast ${type}`;
+  t.innerHTML=`<span>${type==='success'?'✅':'❌'}</span>${msg}`;
+  tc.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// ══════════════════════════════════════════
+// CONFIRM
+// ══════════════════════════════════════════
+function confirmDel(title,msg,cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  document.getElementById('confirmBtn').onclick=()=>{cb();closeModal('confirmModal');};
+  openModal('confirmModal');
+}
+
+// ══════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════
+function updateDashboard(){
+  const placed=students.filter(s=>s.status==='Placed');
+  const pkgs=placed.filter(s=>s.package>0).map(s=>s.package);
+  const avg=pkgs.length?(pkgs.reduce((a,b)=>a+b,0)/pkgs.length).toFixed(1):0;
+  const max=pkgs.length?Math.max(...pkgs):0;
+  const pct=students.length?Math.round((placed.length/students.length)*100):0;
+  document.getElementById('kpiPlaced').textContent=placed.length;
+  document.getElementById('kpiPlacedPct').textContent=`↑ ${pct}% of batch`;
+  document.getElementById('kpiAvgPkg').textContent=avg?`₹${avg}L`:'—';
+  document.getElementById('kpiMaxPkg').textContent=max?`₹${max}L`:'—';
+  document.getElementById('kpiCompanies').textContent=companies.length;
+  document.getElementById('kpiActiveCo').textContent=`${companies.filter(c=>c.status==='Active').length} active`;
+  document.getElementById('donutPct').textContent=pct+'%';
+  document.getElementById('totalOffersLabel').textContent=`${placed.length} total`;
+  document.getElementById('companyCountLabel').textContent=`${companies.length} co.`;
+  renderBarChart();renderFunnel();renderTopRoles();renderDashCompanyTable();renderHeatmap();
+}
+function renderBarChart(){
+  const months=['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb'];
+  const curr=[12,28,45,82,140,210,180,placed_this_month()];
+  const prev=[8,20,38,70,120,180,160,140];
+  const mx=Math.max(...curr,...prev);
+  document.getElementById('barChart').innerHTML=months.map((l,i)=>{
+    const h1=Math.round((curr[i]/mx)*108);const h2=Math.round((prev[i]/mx)*108);
+    return `<div class="bar-group"><div class="bars"><div class="bar teal" style="height:${h1}px"></div><div class="bar purple" style="height:${h2}px"></div></div><span class="bar-label">${l}</span></div>`;
+  }).join('');
+}
+function placed_this_month(){return students.filter(s=>s.status==='Placed'&&s.offerDate&&s.offerDate.startsWith('2025-02')).length+150;}
+function renderFunnel(){
+  const t=students.length||1;
+  const steps=[
+    {label:'Registered',val:t,pct:100,color:'#6b7280'},
+    {label:'Eligible',val:Math.round(t*0.96),pct:96,color:'#38bdf8'},
+    {label:'Applied',val:Math.round(t*0.82),pct:82,color:'#60a5fa'},
+    {label:'Shortlisted',val:Math.round(t*0.56),pct:56,color:'#facc15'},
+    {label:'Offered',val:students.filter(s=>s.status==='Placed'||s.status==='Intern').length,pct:Math.round((students.filter(s=>s.status==='Placed'||s.status==='Intern').length/t)*100),color:'#c084fc'},
+  ];
+  document.getElementById('funnel').innerHTML=steps.map(s=>`
+    <div class="funnel-step"><span class="funnel-step-label">${s.label}</span>
+    <div class="funnel-bar-wrap"><div class="funnel-bar-fill" style="width:${s.pct}%;background:${s.color}20;color:${s.color};border:1px solid ${s.color}30;">${s.pct}%</div></div>
+    <span class="funnel-step-val">${s.val}</span></div>`).join('');
+}
+function renderTopRoles(){
+  const roles=[{name:'Software Engineer',count:312,color:'var(--accent)'},{name:'Data Analyst',count:142,color:'var(--accent4)'},{name:'Business Analyst',count:98,color:'var(--accent3)'},{name:'Systems Analyst',count:87,color:'var(--accent2)'},{name:'Consultant',count:74,color:'#60a5fa'}];
+  document.getElementById('topRoles').innerHTML=roles.map(r=>`
+    <div class="spark-item"><div class="spark-meta"><span class="spark-name">${r.name}</span><span class="spark-val" style="color:${r.color}">${r.count}</span></div>
+    <div class="spark-bar-track"><div class="spark-bar-fill" style="width:${Math.round((r.count/312)*100)}%;background:${r.color}"></div></div></div>`).join('');
+}
+function renderDashCompanyTable(){
+  const colors=['#4285f4','#ff9900','#0078d4','#34d399','#fb923c','#f472b6'];
+  document.getElementById('dashCompanyBody').innerHTML=companies.slice(0,5).map((c,i)=>{
+    const col=colors[i%colors.length];
+    const sb=c.status==='Active'?'status-active':c.status==='Upcoming'?'status-upcoming':'status-closed';
+    return `<tr><td><span class="company-logo" style="background:${col}20;color:${col}">${c.name[0]}</span>${c.name}</td>
+    <td style="font-family:'DM Mono',monospace;">${students.filter(s=>s.company===c.name).length}</td>
+    <td style="font-family:'DM Mono',monospace;">₹${c.maxCtc}L</td>
+    <td><span class="status-badge ${sb}">${c.status}</span></td></tr>`;
+  }).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">No companies yet</td></tr>';
+}
+function renderHeatmap(){
+  const months=['J','F','M','A','M','J','J','A','S','O','N','D'];
+  document.getElementById('hmLabels').innerHTML=months.map(m=>`<div class="heatmap-month-label">${m}</div>`).join('');
+  const inten=[0,0,0,0.1,0.1,0.2,0.2,0.1,0.3,0.4,0.5,0.5,0.4,0.5,0.7,0.9,1,0.8,0.7,0.6,0.5,0.4,0.6,0.7,0.8,0.75,0.7,0.5,0.3,0.25,0.1,0.05,0,0,0,0];
+  document.getElementById('heatmap').innerHTML=Array.from({length:72},(_,i)=>{const v=inten[i%inten.length];return `<div class="hm-cell" style="background:rgba(124,58,237,${v})" title="${Math.round(v*48)} offers"></div>`;}).join('');
+}
+
+// ══════════════════════════════════════════
+// STUDENTS CRUD
+// ══════════════════════════════════════════
+function saveStudent(){
+  const name=document.getElementById('s_name').value.trim();
+  const roll=document.getElementById('s_roll').value.trim();
+  const branch=document.getElementById('s_branch').value;
+  if(!name){toast('Name is required','error');return;}
+  students.push({id:nextStudentId++,name,roll,
+    degree:document.getElementById('s_degree').value,branch,
+    cgpa:parseFloat(document.getElementById('s_cgpa').value)||0,
+    email:document.getElementById('s_email').value,phone:document.getElementById('s_phone').value,
+    gender:document.getElementById('s_gender').value,
+    status:document.getElementById('s_status').value,
+    company:document.getElementById('s_company').value,
+    package:parseFloat(document.getElementById('s_package').value)||0,
+    offerDate:document.getElementById('s_offerDate').value,
+    skills:document.getElementById('s_skills').value,notes:document.getElementById('s_notes').value,
+  });
+  filteredStudents=[...students];
+  ['s_name','s_roll','s_cgpa','s_email','s_phone','s_company','s_package','s_offerDate','s_skills','s_notes'].forEach(id=>document.getElementById(id).value='');
+  closeModal('addStudentModal');toast(`Student "${name}" added!`);
+  renderStudentTable(filteredStudents);updateStudentStats();updateDashboard();
+}
+
+function editStudent(id){
+  const s=students.find(x=>x.id===id);if(!s)return;
+  ['id','name','roll','cgpa','email','phone','company','package','offerDate','skills','notes'].forEach(f=>document.getElementById('es_'+f).value=s[f]||'');
+  document.getElementById('es_degree').value=s.degree||'B.Tech';
+  document.getElementById('es_branch').value=s.branch;
+  document.getElementById('es_status').value=s.status;
+  document.getElementById('es_gender').value=s.gender||'';
+  openModal('editStudentModal');
+}
+function updateStudent(){
+  const id=parseInt(document.getElementById('es_id').value);
+  const idx=students.findIndex(x=>x.id===id);if(idx<0)return;
+  students[idx]={...students[idx],name:document.getElementById('es_name').value,roll:document.getElementById('es_roll').value,
+    degree:document.getElementById('es_degree').value,branch:document.getElementById('es_branch').value,
+    cgpa:parseFloat(document.getElementById('es_cgpa').value)||0,
+    email:document.getElementById('es_email').value,phone:document.getElementById('es_phone').value,
+    gender:document.getElementById('es_gender').value,status:document.getElementById('es_status').value,
+    company:document.getElementById('es_company').value,package:parseFloat(document.getElementById('es_package').value)||0,
+    offerDate:document.getElementById('es_offerDate').value,skills:document.getElementById('es_skills').value,notes:document.getElementById('es_notes').value,
+  };
+  filteredStudents=[...students];closeModal('editStudentModal');toast('Student updated!');
+  renderStudentTable(filteredStudents);updateStudentStats();updateDashboard();
+}
+function deleteStudent(id){
+  const s=students.find(x=>x.id===id);
+  confirmDel('Delete Student?',`Remove ${s.name}?`,()=>{
+    students=students.filter(x=>x.id!==id);filteredStudents=[...students];
+    renderStudentTable(filteredStudents);updateStudentStats();updateDashboard();toast('Deleted');
+  });
+}
+function renderStudentTable(list){
+  const tbody=document.getElementById('studentTableBody'),empty=document.getElementById('studentEmpty');
+  if(!list.length){tbody.innerHTML='';empty.style.display='block';updateStudentStats();return;}
+  empty.style.display='none';
+  tbody.innerHTML=list.map(s=>{
+    const sb=s.status==='Placed'?'status-placed':s.status==='Intern'?'status-intern':'status-unplaced';
+    return `<tr>
+      <td><strong>${s.name}</strong>${s.email?`<div style="font-size:10.5px;color:var(--muted)">${s.email}</div>`:''}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11.5px;">${s.roll||'—'}</td>
+      <td><span class="pill pill-teal" style="font-size:10px;">${s.degree||''} ${s.branch}</span></td>
+      <td style="font-family:'DM Mono',monospace;">${s.cgpa||'—'}</td>
+      <td>${s.company||'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-family:'DM Mono',monospace;color:var(--accent3)">${s.package?'₹'+s.package+'L':'—'}</td>
+      <td><span class="status-badge ${sb}">${s.status}</span></td>
+      <td><div class="action-btns"><button class="btn btn-ghost btn-xs" onclick="editStudent(${s.id})">✏️</button><button class="btn btn-danger btn-xs" onclick="deleteStudent(${s.id})">🗑️</button></div></td>
+    </tr>`;
+  }).join('');updateStudentStats();
+}
+function updateStudentStats(){
+  const placed=students.filter(s=>s.status==='Placed');
+  const pkgs=placed.filter(s=>s.package>0).map(s=>s.package);
+  const avg=pkgs.length?(pkgs.reduce((a,b)=>a+b,0)/pkgs.length).toFixed(1):0;
+  document.getElementById('sTotalStudents').textContent=students.length;
+  document.getElementById('sPlaced').textContent=placed.length;
+  document.getElementById('sUnplaced').textContent=students.filter(s=>s.status==='Unplaced').length;
+  document.getElementById('sAvgPkg').textContent=avg?`₹${avg}L`:'—';
+}
+function filterStudents(q){filteredStudents=q?students.filter(s=>s.name.toLowerCase().includes(q.toLowerCase())||s.roll.toLowerCase().includes(q.toLowerCase())||s.branch.toLowerCase().includes(q.toLowerCase())||(s.company&&s.company.toLowerCase().includes(q.toLowerCase()))):[...students];renderStudentTable(filteredStudents);}
+function filterStudentStatus(v){filteredStudents=v?students.filter(s=>s.status===v):[...students];renderStudentTable(filteredStudents);}
+function filterStudentBranch(v){filteredStudents=v?students.filter(s=>s.branch===v||s.degree===v):[...students];renderStudentTable(filteredStudents);}
+
+// ══════════════════════════════════════════
+// EXCEL IMPORT
+// ══════════════════════════════════════════
+function handleDragOver(e){e.preventDefault();document.getElementById('dropZone').classList.add('dragover');}
+function handleDrop(e){e.preventDefault();document.getElementById('dropZone').classList.remove('dragover');const file=e.dataTransfer.files[0];if(file)processFile(file);}
+function handleFileSelect(e){const file=e.target.files[0];if(file)processFile(file);}
+
+function processFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls','csv'].includes(ext)){toast('Only .xlsx, .xls, .csv supported','error');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(json.length<2){toast('File appears empty','error');return;}
+      excelHeaders=json[0].map(h=>String(h).trim());
+      excelData=json.slice(1).filter(row=>row.some(c=>c!==''));
+      showExcelPreview(file.name);
+    }catch(err){toast('Could not read file: '+err.message,'error');}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showExcelPreview(filename){
+  const preview=document.getElementById('excelPreview');
+  preview.style.display='block';
+  document.getElementById('previewTitle').textContent=`📄 ${filename}`;
+  document.getElementById('previewCount').textContent=`${excelData.length} rows found`;
+  // Table preview (first 5 rows)
+  const tbl=document.getElementById('previewTable');
+  const previewRows=excelData.slice(0,5);
+  tbl.innerHTML=`<tr>${excelHeaders.map(h=>`<th>${h}</th>`).join('')}</tr>`+
+    previewRows.map(row=>`<tr>${excelHeaders.map((_,i)=>`<td>${row[i]||''}</td>`).join('')}</tr>`).join('');
+  // Column mapping UI
+  const fields=[
+    {key:'name',label:'Full Name',required:true},
+    {key:'roll',label:'Roll Number'},
+    {key:'degree',label:'Degree (B.Tech/MBA…)'},
+    {key:'branch',label:'Branch/Specialization'},
+    {key:'cgpa',label:'CGPA'},
+    {key:'email',label:'Email'},
+    {key:'phone',label:'Phone'},
+    {key:'gender',label:'Gender'},
+    {key:'status',label:'Placement Status'},
+    {key:'company',label:'Placed Company'},
+    {key:'package',label:'Package (LPA)'},
+    {key:'skills',label:'Skills'},
+  ];
+  // Auto-map by fuzzy matching
+  columnMappings={};
+  fields.forEach(f=>{
+    const match=excelHeaders.findIndex(h=>{
+      const hl=h.toLowerCase().replace(/[^a-z]/g,'');
+      const fl=f.key.toLowerCase();
+      const aliases={name:['name','fullname','studentname'],roll:['roll','rollno','rollnumber','enrollment','id'],degree:['degree','programme','program','course'],branch:['branch','dept','department','specialization','stream'],cgpa:['cgpa','gpa','marks','percentage','score'],email:['email','mail','emailid'],phone:['phone','mobile','contact','number'],gender:['gender','sex'],status:['status','placement','placementstatus'],company:['company','employer','firm','organization'],package:['package','ctc','salary','stipend','lpa'],skills:['skills','technologies','tech']};
+      return (aliases[f.key]||[f.key]).some(a=>hl.includes(a));
+    });
+    if(match>=0) columnMappings[f.key]=match;
+  });
+  const mapHtml=fields.map(f=>`
+    <div class="col-map-row">
+      <div style="font-size:12px;${f.required?'color:var(--text);font-weight:600':'color:var(--muted)'}">${f.label}${f.required?' *':''}</div>
+      <span class="col-map-arrow">→</span>
+      <select onchange="columnMappings['${f.key}']=parseInt(this.value)" style="font-size:12px;padding:5px 8px;">
+        <option value="-1">— Skip —</option>
+        ${excelHeaders.map((h,i)=>`<option value="${i}" ${columnMappings[f.key]===i?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>`).join('');
+  document.getElementById('columnMapping').innerHTML=mapHtml;
+  document.getElementById('importBtn').disabled=false;
+}
+
+function importStudents(){
+  if(!excelData.length){toast('No data to import','error');return;}
+  const nameCol=columnMappings['name'];
+  if(nameCol===undefined||nameCol<0){toast('Please map the Name column','error');return;}
+  let imported=0,skipped=0;
+  excelData.forEach(row=>{
+    const name=String(row[nameCol]||'').trim();
+    if(!name){skipped++;return;}
+    const getVal=(key)=>{const i=columnMappings[key];return(i>=0&&i!==undefined)?String(row[i]||'').trim():'';};
+    const roll=getVal('roll');
+    if(roll&&students.find(s=>s.roll===roll)){skipped++;return;} // skip duplicates by roll
+    const rawStatus=getVal('status').toLowerCase();
+    const status=rawStatus.includes('place')?'Placed':rawStatus.includes('intern')?'Intern':'Unplaced';
+    const rawDegree=getVal('degree').trim();
+    students.push({
+      id:nextStudentId++,name,roll,
+      degree:rawDegree||'B.Tech',branch:getVal('branch'),
+      cgpa:parseFloat(getVal('cgpa'))||0,
+      email:getVal('email'),phone:getVal('phone'),gender:getVal('gender'),
+      status,company:getVal('company'),
+      package:parseFloat(getVal('package'))||0,
+      offerDate:'',skills:getVal('skills'),notes:'Imported from Excel',
+    });imported++;
+  });
+  filteredStudents=[...students];
+  const summary=document.getElementById('importSummary');
+  summary.style.display='block';
+  summary.innerHTML=`✅ <strong>${imported}</strong> students imported &nbsp;|&nbsp; ⚠️ <strong>${skipped}</strong> skipped (duplicates / empty names)`;
+  document.getElementById('importBtn').disabled=true;
+  renderStudentTable(filteredStudents);updateStudentStats();updateDashboard();
+  toast(`✅ ${imported} students imported from Excel!`);
+}
+
+function downloadExcelTemplate(){
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['Full Name','Roll Number','Degree','Branch','CGPA','Email','Phone','Gender','Placement Status','Placed Company','Package (LPA)','Skills','Notes'],
+    ['Arjun Mehta','21CS001','B.Tech','CSE','8.75','arjun@univ.edu','+91 9876543210','Male','Placed','Google','42','Python, ML','Sample row'],
+    ['Priya Sharma','22MBA05','MBA','Finance','8.2','priya@univ.edu','+91 9123456789','Female','Unplaced','','','Excel, Finance',''],
+  ]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Students');
+  XLSX.writeFile(wb,'PlaceIQ_Student_Template.xlsx');
+  toast('Template downloaded! Fill it and re-import 📥');
+}
+
+function exportStudentsExcel(){
+  const rows=students.map(s=>({Name:s.name,'Roll No':s.roll,Degree:s.degree,Branch:s.branch,CGPA:s.cgpa,Email:s.email,Phone:s.phone,Gender:s.gender,Status:s.status,Company:s.company,'Package (LPA)':s.package,'Offer Date':s.offerDate,Skills:s.skills}));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Students');
+  XLSX.writeFile(wb,`PlaceIQ_Students_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Students exported to Excel! 📊');
+}
+
+// ══════════════════════════════════════════
+// COMPANIES CRUD
+// ══════════════════════════════════════════
+function saveCompany(){
+  const name=document.getElementById('c_name').value.trim(),sector=document.getElementById('c_sector').value;
+  if(!name||!sector){toast('Name and Sector required','error');return;}
+  companies.push({id:nextCompanyId++,name,sector,hr:document.getElementById('c_hr').value,hrEmail:document.getElementById('c_hrEmail').value,minCtc:parseFloat(document.getElementById('c_minCtc').value)||0,maxCtc:parseFloat(document.getElementById('c_maxCtc').value)||0,driveDate:document.getElementById('c_driveDate').value,status:document.getElementById('c_status').value,roles:document.getElementById('c_roles').value,notes:document.getElementById('c_notes').value});
+  filteredCompanies=[...companies];
+  ['c_name','c_hr','c_hrEmail','c_minCtc','c_maxCtc','c_driveDate','c_roles','c_notes'].forEach(id=>document.getElementById(id).value='');
+  closeModal('addCompanyModal');toast(`Company "${name}" added!`);
+  renderCompanyTable(filteredCompanies);updateCompanyStats();updateDashboard();
+}
+function editCompany(id){
+  const c=companies.find(x=>x.id===id);if(!c)return;
+  document.getElementById('ec_id').value=c.id;
+  ['name','hr','hrEmail','minCtc','maxCtc','driveDate','roles','notes'].forEach(f=>document.getElementById('ec_'+f).value=c[f]||'');
+  document.getElementById('ec_sector').value=c.sector;document.getElementById('ec_status').value=c.status;
+  openModal('editCompanyModal');
+}
+function updateCompany(){
+  const id=parseInt(document.getElementById('ec_id').value);const idx=companies.findIndex(x=>x.id===id);if(idx<0)return;
+  companies[idx]={...companies[idx],name:document.getElementById('ec_name').value,sector:document.getElementById('ec_sector').value,hr:document.getElementById('ec_hr').value,hrEmail:document.getElementById('ec_hrEmail').value,minCtc:parseFloat(document.getElementById('ec_minCtc').value)||0,maxCtc:parseFloat(document.getElementById('ec_maxCtc').value)||0,driveDate:document.getElementById('ec_driveDate').value,status:document.getElementById('ec_status').value,roles:document.getElementById('ec_roles').value,notes:document.getElementById('ec_notes').value};
+  filteredCompanies=[...companies];closeModal('editCompanyModal');toast('Company updated!');
+  renderCompanyTable(filteredCompanies);updateCompanyStats();updateDashboard();
+}
+function deleteCompany(id){
+  const c=companies.find(x=>x.id===id);
+  confirmDel('Delete Company?',`Remove ${c.name}?`,()=>{companies=companies.filter(x=>x.id!==id);filteredCompanies=[...companies];renderCompanyTable(filteredCompanies);updateCompanyStats();updateDashboard();toast('Deleted');});
+}
+function renderCompanyTable(list){
+  const tbody=document.getElementById('companyTableBody'),empty=document.getElementById('companyEmpty');
+  if(!list.length){tbody.innerHTML='';empty.style.display='block';updateCompanyStats();return;}
+  empty.style.display='none';
+  const cols=['#4285f4','#ff9900','#0078d4','#34d399','#fb923c','#a78bfa'];
+  tbody.innerHTML=list.map((c,i)=>{const col=cols[i%cols.length];const sb=c.status==='Active'?'status-active':c.status==='Upcoming'?'status-upcoming':'status-closed';
+    return `<tr><td><span class="company-logo" style="background:${col}20;color:${col}">${c.name[0]}</span><strong>${c.name}</strong></td>
+    <td><span class="pill pill-teal">${c.sector}</span></td>
+    <td style="font-family:'DM Mono',monospace;font-size:11.5px;">₹${c.minCtc}–${c.maxCtc}L</td>
+    <td style="font-family:'DM Mono',monospace;">${students.filter(s=>s.company===c.name).length}</td>
+    <td style="font-size:12px;">${c.driveDate||'—'}</td>
+    <td><span class="status-badge ${sb}">${c.status}</span></td>
+    <td><div class="action-btns"><button class="btn btn-ghost btn-xs" onclick="editCompany(${c.id})">✏️</button><button class="btn btn-danger btn-xs" onclick="deleteCompany(${c.id})">🗑️</button></div></td></tr>`;
+  }).join('');updateCompanyStats();
+}
+function updateCompanyStats(){document.getElementById('cTotal').textContent=companies.length;document.getElementById('cActive').textContent=companies.filter(c=>c.status==='Active').length;document.getElementById('cUpcoming').textContent=companies.filter(c=>c.status==='Upcoming').length;document.getElementById('cTotalOffers').textContent=students.filter(s=>s.status==='Placed').length;}
+function filterCompanies(q){filteredCompanies=q?companies.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())):[...companies];renderCompanyTable(filteredCompanies);}
+function filterCompanyStatus(v){filteredCompanies=v?companies.filter(c=>c.status===v):[...companies];renderCompanyTable(filteredCompanies);}
+
+// ══════════════════════════════════════════
+// JOB DESCRIPTIONS
+// ══════════════════════════════════════════
+function saveJDManual(){
+  const company=document.getElementById('jd_company').value.trim(),role=document.getElementById('jd_role').value.trim();
+  if(!company||!role){toast('Company and Role required','error');return;}
+  jobDescriptions.push({id:nextJDId++,company,role,location:document.getElementById('jd_location').value,ctc:document.getElementById('jd_ctc').value,type:document.getElementById('jd_type').value,drive:document.getElementById('jd_drive').value,degree:document.getElementById('jd_degree').value,deadline:document.getElementById('jd_deadline').value,source:document.getElementById('jd_source').value,url:document.getElementById('jd_url').value,skills:document.getElementById('jd_skills').value.split(',').map(s=>s.trim()).filter(Boolean),minCgpa:parseFloat(document.getElementById('jd_minCgpa').value)||0,desc:document.getElementById('jd_desc').value,addedDate:new Date().toISOString().slice(0,10)});
+  filteredJDs=[...jobDescriptions];closeModal('addJDModal');toast(`JD for "${role}" saved!`);renderJDGrid(filteredJDs);
+}
+function deleteJD(id){const j=jobDescriptions.find(x=>x.id===id);confirmDel('Delete JD?',`Remove "${j.role}" at ${j.company}?`,()=>{jobDescriptions=jobDescriptions.filter(x=>x.id!==id);filteredJDs=[...jobDescriptions];renderJDGrid(filteredJDs);toast('JD deleted');});}
+
+function renderJDGrid(list){
+  const grid=document.getElementById('jdGrid'),empty=document.getElementById('jdEmpty');
+  let filtered=list;
+  if(currentJDTab!=='all') filtered=list.filter(j=>j.degree===currentJDTab||j.degree==='All');
+  document.getElementById('jdCount').textContent=`${filtered.length} jobs`;
+  if(!filtered.length){grid.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  const srcColors={LinkedIn:'#0077b5',Naukri:'#ff7700',Indeed:'#003a9b',Internshala:'#0a6ed1',Glassdoor:'#0caa41','AI Generated':'#c084fc','AI Search':'#c084fc',Manual:'#6b7280',Freshersworld:'#f59e0b',Shine:'#8b5cf6'};
+  const degColors={'B.Tech':'var(--accent)','MBA':'var(--accent3)','MCA':'var(--accent4)','BCA':'#60a5fa','B.Com':'#34d399','BBA':'#fb923c','All':'var(--muted)'};
+  grid.innerHTML=filtered.map(j=>{
+    const col=srcColors[j.source]||'#6b7280';const dc=degColors[j.degree]||'var(--muted)';
+    return `<div class="jd-card">
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${col};border-radius:13px 13px 0 0;"></div>
+      <div class="jd-card-top">
+        <div><div class="jd-company">${j.company}</div><div class="jd-role">${j.role}</div></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <span class="pill" style="background:${col}18;color:${col}">${j.type||'Full-Time'}</span>
+          <span class="jd-degree-badge" style="background:${dc}18;color:${dc}">${j.degree||'All'}</span>
+        </div>
+      </div>
+      <div class="jd-meta">
+        ${j.location?`<span class="jd-meta-item">📍 ${j.location}</span>`:''}
+        ${j.ctc?`<span class="jd-meta-item">💰 ${j.ctc}</span>`:''}
+        ${j.deadline?`<span class="jd-meta-item">📅 ${j.deadline}</span>`:''}
+        ${j.minCgpa?`<span class="jd-meta-item">🎯 ≥${j.minCgpa} CGPA</span>`:''}
+      </div>
+      ${j.desc?`<div class="jd-desc">${j.desc.slice(0,140)}${j.desc.length>140?'…':''}</div>`:''}
+      ${j.skills&&j.skills.length?`<div class="jd-skills">${j.skills.slice(0,6).map(s=>`<span class="jd-skill">${s}</span>`).join('')}</div>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="jd-source" style="color:${col}">● ${j.source}</span>
+        <span class="jd-source">${j.addedDate||''}</span>
+      </div>
+      <div class="jd-card-actions">
+        ${j.url?`<a href="${j.url}" target="_blank" class="btn btn-ghost btn-xs" style="text-decoration:none;">🔗 Apply</a>`:''}
+        <button class="btn btn-purple btn-xs" onclick="shareJD(${j.id})">📤 Share</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteJD(${j.id})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function switchJobTab(type,el){currentJDTab=type;document.querySelectorAll('#page-jobs .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderJDGrid(filteredJDs);}
+function filterJDs(q){filteredJDs=q?jobDescriptions.filter(j=>j.company.toLowerCase().includes(q.toLowerCase())||j.role.toLowerCase().includes(q.toLowerCase())||(j.skills&&j.skills.join(' ').toLowerCase().includes(q.toLowerCase()))):[...jobDescriptions];renderJDGrid(filteredJDs);}
+function filterJDSource(v){filteredJDs=v?jobDescriptions.filter(j=>j.source===v):[...jobDescriptions];renderJDGrid(filteredJDs);}
+function shareJD(id){const j=jobDescriptions.find(x=>x.id===id);const text=`🚨 Job Alert!\n\n🏢 ${j.company}\n💼 ${j.role}\n📍 ${j.location||'N/A'}\n💰 ${j.ctc||'N/A'}\n🎓 ${j.degree||'All Degrees'}\n📅 Deadline: ${j.deadline||'N/A'}\n\n🔗 ${j.url||'Check Placement Cell'}`;navigator.clipboard.writeText(text).then(()=>toast('Copied! Share on WhatsApp 📋'));}
+
+// DEGREE CHIPS
+function selectDegree(el){
+  document.querySelectorAll('.degree-chip').forEach(d=>d.classList.remove('active'));
+  el.classList.add('active');selectedDegree=el.dataset.degree;
+}
+document.querySelectorAll('.portal-btn').forEach(btn=>{
+  btn.addEventListener('click',function(){
+    this.classList.toggle('selected');
+    const p=this.dataset.portal;
+    if(selectedPortals.includes(p))selectedPortals=selectedPortals.filter(x=>x!==p);
+    else selectedPortals.push(p);
+  });
+});
+
+// ══════════════════════════════════════════
+// ⚡ LATEST JOBS — AUTO FETCH
+// ══════════════════════════════════════════
+
+// Called from topbar button — navigate to jobs page first, then fetch
+function goToLatestJobs() {
+  var jobsNavItem = null;
+  document.querySelectorAll('.nav-item').forEach(function(el) {
+    if (el.textContent.trim().indexOf('Job Opportunities') !== -1) jobsNavItem = el;
+  });
+  showPage('jobs', jobsNavItem || document.querySelector('.nav-item'));
+  // Small delay so the jobs page renders before we try to access its elements
+  setTimeout(fetchLatestJobs, 100);
+}
+
+async function fetchLatestJobs() {
+  // Safely grab elements — they only exist on the jobs page
+  var statusBar  = document.getElementById('ljStatusBar');
+  var statusText = document.getElementById('ljStatusText');
+  if (statusBar)  statusBar.style.display  = 'flex';
+  if (statusText) statusText.textContent    = 'Starting job search…';
+
+  // Disable both fetch buttons while running
+  var btn1 = document.getElementById('latestJobsBtn');
+  var btn2 = document.getElementById('latestJobsBtn2');
+  [btn1, btn2].forEach(function(b) { if (b) { b.disabled = true; b.innerHTML = '<span class="spinner"></span> Fetching…'; } });
+
+  var loc      = (document.getElementById('ljLocation')  || {value:''}).value;
+  var jtype    = (document.getElementById('ljJobType')    || {value:''}).value;
+  var customQ  = (document.getElementById('ljCustomQuery') || {value:''}).value;
+  var portals  = selectedPortals.length ? selectedPortals.join(', ') : 'LinkedIn, Naukri, Indeed';
+  var today    = new Date().toLocaleDateString('en-IN', {day:'numeric', month:'long', year:'numeric'});
+  var deadline = new Date(); deadline.setDate(deadline.getDate() + 45);
+  var deadlineStr = deadline.toISOString().slice(0, 10);
+  var addedDate   = new Date().toISOString().slice(0, 10);
+
+  var degreeConfigs = {
+    'B.Tech': ['Software Engineer','Data Analyst','ML Engineer','DevOps Engineer','Product Manager'],
+    'MBA':    ['Business Analyst','Marketing Manager','Finance Analyst','HR Manager','Strategy Consultant'],
+    'MCA':    ['Software Developer','Web Developer','Database Administrator','Cloud Engineer','Java Developer'],
+    'BCA':    ['Junior Developer','Web Designer','IT Support','Software Tester','Frontend Developer'],
+    'B.Com':  ['Accountant','Finance Executive','Tax Analyst','Audit Associate','Banking Associate'],
+    'BBA':    ['Sales Executive','Marketing Executive','HR Trainee','Business Development Executive','Operations Trainee'],
+  };
+  var allDegrees = ['B.Tech','MBA','MCA','BCA','B.Com','BBA'];
+  var degreesToFetch = selectedDegree === 'All' ? allDegrees : [selectedDegree];
+  var totalFetched = 0;
+
+  var apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('placeiq_api_key') || '';
+  if (!apiKey) {
+    [btn1, btn2].forEach(function(b){ if(b){ b.disabled=false; b.innerHTML='&#9889; Latest Jobs'; } });
+    if(statusBar) statusBar.style.display='none';
+    toast('⚠️ Please enter your Anthropic API Key in the top bar first.','error');
+    return;
+  }
+
+  for (var i = 0; i < degreesToFetch.length; i++) {
+    var deg   = degreesToFetch[i];
+    var roles = (degreeConfigs[deg] || []).slice(0, 4);
+    if (statusText) statusText.textContent = 'Searching ' + deg + ' jobs from ' + portals + '… (' + (i+1) + '/' + degreesToFetch.length + ')';
+
+    var prompt = 'Generate 4 realistic fresh job listings for ' + deg + ' graduates'
+      + (loc ? ' in ' + loc : ' in India')
+      + (customQ ? ', focused on: ' + customQ : '')
+      + (jtype ? ', job type: ' + jtype : '')
+      + '. Sourced from: ' + portals + '.'
+      + ' Roles: ' + roles.join(', ') + '.'
+      + ' Current date: ' + today + '.'
+      + ' Return ONLY a valid JSON array (no markdown, no explanation) where each object has these exact string/array keys:'
+      + ' company (real Indian or MNC), role (exact title), location (Indian city or Remote),'
+      + ' ctc (like "rupee symbol 8-12 LPA" or "rupee symbol 40000/month"),'
+      + ' type ("Full-Time" or "Internship"), drive ("Campus Drive" or "Off Campus"),'
+      + ' degree ("' + deg + '"), deadline ("' + deadlineStr + '"),'
+      + ' source (one of: ' + portals + '),'
+      + ' url (a plausible careers page URL),'
+      + ' skills (array of 4 strings),'
+      + ' minCgpa (number like 6.5),'
+      + ' exp ("Freshers" or "0-1 Years"),'
+      + ' desc (2 sentence description),'
+      + ' addedDate ("' + addedDate + '").';
+
+    try {
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages: [{role: 'user', content: prompt}]
+        })
+      });
+      if (!resp.ok) {
+        var errData = await resp.json().catch(function(){ return {}; });
+        var errMsg = (errData.error && errData.error.message) ? errData.error.message : ('HTTP ' + resp.status);
+        console.warn('API error for', deg, errMsg);
+        if (statusText) statusText.textContent = 'API error: ' + errMsg;
+        continue;
+      }
+      var data = await resp.json();
+      var raw  = (data.content || []).map(function(x){ return x.text || ''; }).join('');
+      raw = raw.replace(/^```[a-z]*\n?/i, '').replace(/```$/,'').trim();
+      var jobs;
+      try { jobs = JSON.parse(raw); } catch(e) { console.warn('JSON parse failed for', deg, raw.slice(0,200)); continue; }
+      if (!Array.isArray(jobs)) { console.warn('Not an array for', deg); continue; }
+      jobs.forEach(function(j) {
+        jobDescriptions.push({
+          id:        nextJDId++,
+          company:   j.company   || 'Unknown',
+          role:      j.role      || 'Unknown Role',
+          location:  j.location  || '',
+          ctc:       j.ctc       || '',
+          type:      j.type      || 'Full-Time',
+          drive:     j.drive     || 'Off Campus',
+          degree:    j.degree    || deg,
+          deadline:  j.deadline  || deadlineStr,
+          source:    j.source    || 'AI Generated',
+          url:       j.url       || '',
+          skills:    Array.isArray(j.skills) ? j.skills : [],
+          minCgpa:   j.minCgpa   || 0,
+          exp:       j.exp       || 'Freshers',
+          desc:      j.desc      || '',
+          addedDate: j.addedDate || addedDate,
+        });
+        totalFetched++;
+      });
+    } catch(e) {
+      console.warn('Network error for', deg, e && e.message ? e.message : e);
+      if (statusText) statusText.textContent = 'Error fetching ' + deg + ' jobs: ' + (e && e.message ? e.message : 'Unknown error');
+    }
+  }
+
+  // Re-enable buttons
+  [btn1, btn2].forEach(function(b) { if (b) { b.disabled = false; b.innerHTML = '&#9889; Latest Jobs'; } });
+  if (statusBar) statusBar.style.display = 'none';
+
+  filteredJDs = jobDescriptions.slice();
+  renderJDGrid(filteredJDs);
+
+  if (totalFetched > 0) {
+    toast('⚡ ' + totalFetched + ' latest jobs fetched for ' + degreesToFetch.join(', ') + '!');
+    var recent = jobDescriptions.slice(-3).map(function(j){ return j.role + ' @ ' + j.company; }).join(' · ');
+    var ticker = document.getElementById('tickerText');
+    if (ticker) ticker.textContent = 'NEW: ' + recent + ' · ' + totalFetched + ' jobs just fetched';
+  } else {
+    toast('Could not fetch some jobs. Check your API key and connection.', 'error');
+  }
+}
+
+// ══════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════
+function exportData(){
+  const blob=new Blob([JSON.stringify({students,companies,jobDescriptions,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`placeiq-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();
+  toast('Data exported as JSON 📁');
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+updateDashboard();
+renderStudentTable(filteredStudents);
+renderCompanyTable(filteredCompanies);
+renderJDGrid(filteredJDs);
+updateStudentStats();
+updateCompanyStats();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     INTERNSHIP LIVE MODAL
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="internshipModal">
+  <div class="modal intern-modal">
+    <div class="modal-header" style="border-bottom:2px solid rgba(22,163,74,0.15);">
+      <div>
+        <div class="modal-title" style="background:linear-gradient(135deg,#16a34a,#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:20px;display:flex;align-items:center;gap:10px;">
+          <span class="live-dot" style="background:#16a34a;box-shadow:0 0 8px rgba(22,163,74,0.7);display:inline-block;"></span>
+          🎓 Live Internship Finder
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">AI-powered · Govt &amp; Private · India &amp; Abroad · MBA &amp; B.Tech all streams</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('internshipModal')">×</button>
+    </div>
+    <div class="modal-body" style="padding:24px 28px;">
+
+      <!-- HERO FILTER SECTION -->
+      <div class="intern-hero">
+        <div class="intern-hero-title">Find Your Perfect Internship</div>
+        <div class="intern-hero-sub">Select your degree, stream, sector & location — AI fetches real-time opportunities</div>
+        <div class="intern-filters">
+          <div class="intern-filter-group">
+            <label>Degree</label>
+            <select id="iDegree" onchange="updateStreams()">
+              <option value="all">All Degrees</option>
+              <option value="MBA">MBA</option>
+              <option value="B.Tech">B.Tech</option>
+            </select>
+          </div>
+          <div class="intern-filter-group" id="streamGroup">
+            <label>Specialization / Stream</label>
+            <select id="iStream">
+              <option value="all">All Streams</option>
+            </select>
+          </div>
+          <div class="intern-filter-group">
+            <label>Sector</label>
+            <select id="iSector">
+              <option value="all">All Sectors</option>
+              <option value="private">Private Only</option>
+              <option value="govt">Government Only</option>
+              <option value="international">International / Abroad</option>
+            </select>
+          </div>
+          <div class="intern-filter-group">
+            <label>Location / Country</label>
+            <input type="text" id="iLocation" placeholder="e.g. Delhi, USA, Remote…">
+          </div>
+          <div class="intern-filter-group">
+            <label>Duration</label>
+            <select id="iDuration">
+              <option value="">⏱ Any Duration</option>
+              <option value="1 Month">📅 1 Month</option>
+              <option value="2 Months">📅 2 Months</option>
+              <option value="3 Months">📅 3 Months</option>
+              <option value="6 Months">📅 6 Months</option>
+              <option value="1 Year">📅 1 Year</option>
+            </select>
+          </div>
+          <button class="btn-fetch-intern" onclick="fetchInternships()" id="fetchInternBtn">
+            <span id="fetchInternBtnIcon">🔍</span>
+            <span id="fetchInternBtnText">Fetch Live Internships</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STATS BAR -->
+      <div class="intern-stats-bar" id="internStatsBar" style="display:none;">
+        <div class="intern-stat"><div class="intern-stat-val" id="iStatTotal">0</div><div class="intern-stat-label">Total Found</div></div>
+        <div class="intern-stat"><div class="intern-stat-val" id="iStatPrivate" style="background:linear-gradient(135deg,#16a34a,#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div><div class="intern-stat-label">Private Sector</div></div>
+        <div class="intern-stat"><div class="intern-stat-val" id="iStatGovt" style="background:linear-gradient(135deg,#1d4ed8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div><div class="intern-stat-label">Government</div></div>
+        <div class="intern-stat"><div class="intern-stat-val" id="iStatIntl" style="background:linear-gradient(135deg,#db2777,#ea580c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div><div class="intern-stat-label">International</div></div>
+      </div>
+
+      <!-- FILTER TABS -->
+      <div class="intern-filter-tabs" id="internFilterTabs" style="display:none;">
+        <div class="intern-filter-tab active" onclick="filterInternCards('all',this)">🌐 All</div>
+        <div class="intern-filter-tab tab-pvt" onclick="filterInternCards('private',this)">🏢 Private</div>
+        <div class="intern-filter-tab tab-govt" onclick="filterInternCards('govt',this)">🏛️ Government</div>
+        <div class="intern-filter-tab tab-intl" onclick="filterInternCards('intl',this)">✈️ International</div>
+        <input type="text" id="internSearchBox" placeholder="🔎 Search internships…"
+          oninput="searchInternCards(this.value)"
+          style="padding:7px 14px;border-radius:20px;border:1.5px solid rgba(22,163,74,0.2);font-size:12.5px;outline:none;color:var(--text);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;margin-left:auto;width:220px;">
+      </div>
+
+      <!-- LOADING -->
+      <div class="intern-loading" id="internLoading">
+        <div style="width:60px;height:60px;border:4px solid rgba(22,163,74,0.15);border-top-color:#16a34a;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+        <div class="intern-loading-text" id="internLoadingText">Scanning opportunities…</div>
+        <div class="intern-loading-sub" id="internLoadingSub">Fetching from Internshala, LinkedIn, NSIC, AICTE portals…</div>
+        <div class="intern-progress-bar"><div class="intern-progress-fill" id="internProgressFill"></div></div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="internResults"></div>
+
+      <!-- EMPTY -->
+      <div class="intern-empty" id="internEmpty">
+        <div style="font-size:56px;margin-bottom:14px;">🎓</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">No internships found</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px;">Try changing filters or click Fetch Live Internships</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// INTERNSHIP MODULE
+// ══════════════════════════════════════════
+
+var internshipData = [];
+
+var mbaStreams = ['Finance','Marketing','Human Resources','Operations','Business Analytics',
+  'International Business','Supply Chain','Entrepreneurship','Healthcare Management','IT Management'];
+var btechStreams = ['Computer Science (CSE)','Electronics & Communication (ECE)','Mechanical Engineering',
+  'Civil Engineering','Electrical Engineering (EEE)','Information Technology (IT)',
+  'Chemical Engineering','Aerospace Engineering','Data Science & AI','Biotechnology'];
+
+function updateStreams(){
+  var deg = document.getElementById('iDegree').value;
+  var sel = document.getElementById('iStream');
+  sel.innerHTML = '<option value="all">All Streams / Specializations</option>';
+  var arr = deg === 'MBA' ? mbaStreams : deg === 'B.Tech' ? btechStreams : [];
+  arr.forEach(function(s){ var o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+}
+updateStreams();
+
+function openInternshipModal(){
+  openModal('internshipModal');
+}
+
+function getInternCardClass(sector){
+  if(sector==='Government') return 'intern-card-govt';
+  if(sector==='International') return 'intern-card-intl';
+  return '';
+}
+function getBadgeClass(sector){
+  if(sector==='Government') return 'badge-govt';
+  if(sector==='International') return 'badge-intl';
+  return 'badge-pvt';
+}
+function getBadgeLabel(sector){
+  if(sector==='Government') return '🏛️ GOVT';
+  if(sector==='International') return '✈️ INTL';
+  return '🏢 PRIVATE';
+}
+function getApplyBtnClass(sector){
+  if(sector==='Government') return 'btn-apply-intern btn-apply-intern-govt';
+  if(sector==='International') return 'btn-apply-intern btn-apply-intern-intl';
+  return 'btn-apply-intern';
+}
+
+function renderInternCard(intern){
+  var cardClass = getInternCardClass(intern.sector);
+  var bdg = getBadgeClass(intern.sector);
+  var bdgLabel = getBadgeLabel(intern.sector);
+  var applyClass = getApplyBtnClass(intern.sector);
+  var skills = Array.isArray(intern.skills) ? intern.skills : [];
+  return `<div class="intern-card ${cardClass}" data-sector="${intern.sector.toLowerCase()}">
+    <div class="intern-card-header">
+      <div>
+        <div class="intern-org">${intern.org}</div>
+        <div class="intern-role">${intern.role}</div>
+      </div>
+      <span class="intern-sector-badge ${bdg}">${bdgLabel}</span>
+    </div>
+    <div class="intern-meta">
+      <span class="intern-meta-chip">📍 ${intern.location}</span>
+      <span class="intern-meta-chip">⏱ ${intern.duration}</span>
+      <span class="intern-meta-chip">🎓 ${intern.degree}${intern.stream && intern.stream!=='all' ? ' · '+intern.stream : ''}</span>
+      ${intern.cgpa ? `<span class="intern-meta-chip">📊 Min CGPA ${intern.cgpa}</span>` : ''}
+    </div>
+    <div class="intern-desc">${intern.desc}</div>
+    <div class="intern-skills">${skills.map(s=>`<span class="intern-skill-tag">${s}</span>`).join('')}</div>
+    <div class="intern-card-footer">
+      <div>
+        <div class="intern-stipend">${intern.stipend}</div>
+        <div class="intern-deadline">Deadline: ${intern.deadline}</div>
+      </div>
+      <a href="${intern.applyUrl || '#'}" target="_blank" class="${applyClass}">Apply Now →</a>
+    </div>
+  </div>`;
+}
+
+function filterInternCards(type, el){
+  document.querySelectorAll('.intern-filter-tab').forEach(function(t){ t.classList.remove('active'); });
+  if(el) el.classList.add('active');
+  var cards = document.querySelectorAll('.intern-card');
+  cards.forEach(function(c){
+    var sec = c.getAttribute('data-sector');
+    if(type==='all') { c.style.display=''; return; }
+    if(type==='private' && sec==='private') { c.style.display=''; return; }
+    if(type==='govt' && sec==='government') { c.style.display=''; return; }
+    if(type==='intl' && sec==='international') { c.style.display=''; return; }
+    c.style.display='none';
+  });
+}
+
+function searchInternCards(q){
+  var cards = document.querySelectorAll('.intern-card');
+  q = q.toLowerCase();
+  cards.forEach(function(c){ c.style.display = c.innerText.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+async function fetchInternships(){
+  var btn = document.getElementById('fetchInternBtn');
+  var btnIcon = document.getElementById('fetchInternBtnIcon');
+  var btnText = document.getElementById('fetchInternBtnText');
+  var loading = document.getElementById('internLoading');
+  var results = document.getElementById('internResults');
+  var empty = document.getElementById('internEmpty');
+  var statsBar = document.getElementById('internStatsBar');
+  var filterTabs = document.getElementById('internFilterTabs');
+  var progress = document.getElementById('internProgressFill');
+  var loadingText = document.getElementById('internLoadingText');
+  var loadingSub = document.getElementById('internLoadingSub');
+
+  var deg = document.getElementById('iDegree').value;
+  var stream = document.getElementById('iStream').value;
+  var sector = document.getElementById('iSector').value;
+  var location = (document.getElementById('iLocation').value || '').trim();
+  var duration = document.getElementById('iDuration').value;
+
+  btn.disabled = true;
+  btnIcon.innerHTML = '<span style="display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;"></span>';
+  btnText.textContent = 'Fetching…';
+  loading.classList.add('visible');
+  results.innerHTML = '';
+  empty.classList.remove('visible');
+  statsBar.style.display = 'none';
+  filterTabs.style.display = 'none';
+  progress.style.width = '0%';
+
+  // Animated progress
+  var prog = 0;
+  var progInterval = setInterval(function(){
+    prog = Math.min(prog + Math.random()*8, 88);
+    progress.style.width = prog + '%';
+  }, 350);
+
+  var degreeLabel = deg === 'all' ? 'MBA and B.Tech' : deg;
+  var streamLabel = stream === 'all' ? 'all specializations and streams' : stream;
+  var sectorLabel = sector === 'all' ? 'both Government and Private sectors, including International opportunities abroad' :
+    sector === 'private' ? 'Private sector companies' :
+    sector === 'govt' ? 'Government organizations, PSUs, and Ministries' :
+    'International companies abroad (USA, UK, Europe, Singapore, UAE, etc.)';
+  var locationLabel = location ? 'in ' + location : 'across India and internationally';
+  var durationLabel = duration ? ', duration: ' + duration : '';
+
+  var today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  var deadline = new Date(); deadline.setDate(deadline.getDate()+30);
+  var deadlineStr = deadline.toISOString().slice(0,10);
+
+  loadingText.textContent = 'Scanning ' + degreeLabel + ' opportunities…';
+  loadingSub.textContent = 'Searching Internshala, NSIC, AICTE, LinkedIn, Naukri, Glassdoor, UN, WHO portals…';
+
+  var prompt = 'You are a placement officer fetching LIVE internship listings. Generate 18 realistic internship opportunities for '
+    + degreeLabel + ' students with ' + streamLabel + '.'
+    + ' Sector: ' + sectorLabel + '.'
+    + ' Location preference: ' + locationLabel + durationLabel + '.'
+    + ' Current date: ' + today + '.'
+    + ' Include a mix of: Private companies (Indian MNCs, startups, tech firms), Government orgs (PSUs, ISRO, DRDO, NHPC, ONGC, Ministries, IITs, AICTE schemes), and International companies abroad (Google, UN, WHO, World Bank, Microsoft, Deloitte etc).'
+    + ' For MBA: include Finance, Marketing, HR, Operations, Consulting internships.'
+    + ' For B.Tech: include Software, Core Engineering, Research, Data Science internships.'
+    + ' Return ONLY a valid JSON array (no markdown, no explanation) where each object has exactly these keys:'
+    + ' org (organization name), role (internship title), sector ("Private" or "Government" or "International"),'
+    + ' degree (e.g. "MBA" or "B.Tech" or "MBA/B.Tech"), stream (specific stream or "All Streams"),'
+    + ' location (city + country), duration (e.g. "3 Months"), stipend (e.g. "₹25,000/month" or "$2000/month" or "Unpaid"),'
+    + ' cgpa (minimum required, e.g. 6.5 or null), deadline ("' + deadlineStr + '" or a nearby date),'
+    + ' desc (2 engaging sentences about the internship), skills (array of 4 skill strings),'
+    + ' applyUrl (a plausible real careers URL).';
+
+  try {
+    loadingText.textContent = 'AI is curating best-fit internships…';
+    var apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('placeiq_api_key') || '';
+    if(!apiKey){ clearInterval(progInterval); loading.classList.remove('visible'); btn.disabled=false; btnIcon.textContent='🔍'; btnText.textContent='Fetch Live Internships'; toast('⚠️ Please enter your Anthropic API Key in the top bar first.','error'); return; }
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:4000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    if (!resp.ok) {
+      var errData = await resp.json().catch(function(){ return {}; });
+      var errMsg = (errData.error && errData.error.message) ? errData.error.message : ('HTTP ' + resp.status);
+      throw new Error(errMsg);
+    }
+    var data = await resp.json();
+    var raw = (data.content||[]).map(function(x){return x.text||'';}).join('');
+    raw = raw.replace(/^```[a-z]*\n?/i,'').replace(/```$/,'').trim();
+    var arr;
+    try { arr = JSON.parse(raw); } catch(e){ arr = []; }
+    if(!Array.isArray(arr)) arr = [];
+
+    clearInterval(progInterval);
+    progress.style.width = '100%';
+    internshipData = arr;
+
+    setTimeout(function(){
+      loading.classList.remove('visible');
+      btn.disabled = false;
+      btnIcon.textContent = '🔍';
+      btnText.textContent = 'Fetch Again';
+      progress.style.width = '0%';
+
+      if(!arr.length){
+        empty.classList.add('visible');
+        return;
+      }
+
+      var pvt = arr.filter(function(i){ return i.sector==='Private'; });
+      var govt = arr.filter(function(i){ return i.sector==='Government'; });
+      var intl = arr.filter(function(i){ return i.sector==='International'; });
+
+      document.getElementById('iStatTotal').textContent = arr.length;
+      document.getElementById('iStatPrivate').textContent = pvt.length;
+      document.getElementById('iStatGovt').textContent = govt.length;
+      document.getElementById('iStatIntl').textContent = intl.length;
+      statsBar.style.display = 'grid';
+      filterTabs.style.display = 'flex';
+
+      var html = '';
+      if(pvt.length){
+        html += '<div class="intern-section-head">🏢 Private Sector <span class="intern-count-badge">'+pvt.length+' Internships</span></div>';
+        html += '<div class="intern-grid">' + pvt.map(renderInternCard).join('') + '</div>';
+      }
+      if(govt.length){
+        html += '<div class="intern-section-head govt-head">🏛️ Government & PSU <span class="intern-count-badge govt">'+govt.length+' Internships</span></div>';
+        html += '<div class="intern-grid">' + govt.map(renderInternCard).join('') + '</div>';
+      }
+      if(intl.length){
+        html += '<div class="intern-section-head intl-head">✈️ International / Abroad <span class="intern-count-badge intl">'+intl.length+' Internships</span></div>';
+        html += '<div class="intern-grid">' + intl.map(renderInternCard).join('') + '</div>';
+      }
+      results.innerHTML = html;
+      toast('🎓 '+arr.length+' internships fetched! ('+pvt.length+' Private · '+govt.length+' Govt · '+intl.length+' International)');
+    }, 600);
+  } catch(e){
+    clearInterval(progInterval);
+    loading.classList.remove('visible');
+    btn.disabled = false;
+    btnIcon.textContent = '🔍';
+    btnText.textContent = 'Fetch Live Internships';
+    toast('Could not fetch internships: ' + (e && e.message ? e.message : 'Check your API key and connection.'), 'error');
+  }
+}
+</script>
+<!-- ═══════════════════════════════════════════════════════════
+     CERTIFICATE MODAL
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="certModal">
+  <div class="modal cert-modal">
+    <div class="modal-header" id="certModalHeader">
+      <div>
+        <div class="modal-title" id="certModalTitle" style="font-size:20px;">🏅 Certificate Finder</div>
+        <div id="certModalSub" style="font-size:12px;color:var(--muted);margin-top:4px;"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('certModal')">×</button>
+    </div>
+    <div class="modal-body" style="padding:24px 28px;">
+
+      <!-- HERO -->
+      <div class="cert-hero" id="certHero">
+        <div class="cert-hero-emoji" id="certHeroEmoji">🏅</div>
+        <div class="cert-hero-title" id="certHeroTitle">Certificate Finder</div>
+        <div class="cert-hero-sub" id="certHeroSub">AI-powered certificate discovery across top institutions</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:flex-end;">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;">Field / Domain</label>
+            <input type="text" id="certField" placeholder="e.g. Data Science, Finance, Marketing…"
+              style="padding:9px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.2);font-size:12.5px;outline:none;color:var(--text);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;width:240px;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;">Level</label>
+            <select id="certLevel" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.2);font-size:12.5px;color:var(--text);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;outline:none;">
+              <option value="">All Levels</option>
+              <option>Beginner</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+              <option>Professional</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;">Mode</label>
+            <select id="certMode" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(99,102,241,0.2);font-size:12.5px;color:var(--text);background:#fff;font-family:'Plus Jakarta Sans',sans-serif;outline:none;">
+              <option value="">Online & Offline</option>
+              <option>Online</option>
+              <option>Offline</option>
+              <option>Hybrid</option>
+            </select>
+          </div>
+          <button id="certFetchBtn" onclick="fetchCertificates()"
+            style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;padding:10px 22px;border-radius:12px;border:none;cursor:pointer;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(99,102,241,0.3);transition:all 0.2s;">
+            <span id="certFetchIcon">🔍</span>
+            <span id="certFetchText">Fetch Certificates</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="cert-stats-bar" id="certStatsBar" style="display:none;">
+        <div class="cert-stat"><div class="cert-stat-val" id="cStatTotal" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div><div class="cert-stat-label">Total Found</div></div>
+        <div class="cert-stat"><div class="cert-stat-val" id="cStatFree" style="color:#16a34a;">0</div><div class="cert-stat-label">Free / Govt</div></div>
+        <div class="cert-stat"><div class="cert-stat-val" id="cStatPaid" style="color:#0056d3;">0</div><div class="cert-stat-label">Paid</div></div>
+        <div class="cert-stat"><div class="cert-stat-val" id="cStatOnline" style="color:#db2777;">0</div><div class="cert-stat-label">Online</div></div>
+      </div>
+
+      <!-- FILTER TABS + SEARCH -->
+      <div class="cert-filter-tabs" id="certFilterTabs" style="display:none;">
+        <div class="cert-filter-tab active" onclick="filterCertCards('all',this)" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-color:transparent;">🌐 All</div>
+        <div class="cert-filter-tab" onclick="filterCertCards('free',this)">🆓 Free</div>
+        <div class="cert-filter-tab" onclick="filterCertCards('paid',this)">💳 Paid</div>
+        <div class="cert-filter-tab" onclick="filterCertCards('online',this)">💻 Online</div>
+        <div class="cert-filter-tab" onclick="filterCertCards('offline',this)">🏫 Offline</div>
+        <input type="text" class="cert-search" id="certSearchBox" placeholder="🔎 Search certificates…" oninput="searchCertCards(this.value)">
+      </div>
+
+      <!-- LOADING -->
+      <div class="cert-loading" id="certLoading">
+        <div style="width:56px;height:56px;border:4px solid rgba(99,102,241,0.15);border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;"></div>
+        <div class="cert-loading-title" id="certLoadingTitle">Searching certificates…</div>
+        <div class="cert-loading-sub" id="certLoadingSub">Scanning SWAYAM, NPTEL, Coursera, edX, and more…</div>
+        <div class="cert-progress-bar"><div class="cert-progress-fill" id="certProgressFill" style="background:linear-gradient(90deg,#6366f1,#8b5cf6);"></div></div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="certResults"></div>
+
+      <!-- EMPTY -->
+      <div class="cert-empty" id="certEmpty">
+        <div style="font-size:56px;margin-bottom:14px;">🏅</div>
+        <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);">No certificates found</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px;">Try changing filters or click Fetch Certificates</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// CERTIFICATE MODULE
+// ══════════════════════════════════════════
+
+var certSources = {
+  govt:    { label:'Govt. of India', emoji:'🏛️', sub:'SWAYAM · NPTEL · NIELIT · MoE · eBSK', color:'#1d4ed8', src:'src-govt' },
+  iit:     { label:'IITs',           emoji:'🎓', sub:'IIT Bombay · Delhi · Madras · Kanpur · Kharagpur', color:'#7c3aed', src:'src-iit' },
+  iim:     { label:'IIMs',           emoji:'📊', sub:'IIM Ahmedabad · Bangalore · Calcutta · Lucknow', color:'#b45309', src:'src-iim' },
+  private: { label:'Private Companies', emoji:'🏢', sub:'Google · Microsoft · IBM · TCS · Infosys · HCL', color:'#059669', src:'src-private' },
+  univ:    { label:'Universities',   emoji:'🏫', sub:'Harvard · MIT · IISc · BITS · Stanford · Oxford', color:'#db2777', src:'src-univ' },
+  coursera:{ label:'Coursera & edX', emoji:'💻', sub:'Coursera · edX · Udemy · LinkedIn Learning · Skillshare', color:'#0056d3', src:'src-coursera' },
+  platform:{ label:'Various Platforms', emoji:'🌐', sub:'Udacity · Simplilearn · Great Learning · UpGrad · NASSCOM', color:'#e11d48', src:'src-platform' }
+};
+
+var activeCertSource = 'govt';
+var certData = [];
+
+function toggleCertDropdown(e){
+  e.stopPropagation();
+  var dd = document.getElementById('certDropdown');
+  dd.classList.toggle('open');
+}
+document.addEventListener('click', function(){ var dd=document.getElementById('certDropdown'); if(dd) dd.classList.remove('open'); });
+
+function toggleCertSidebar(){
+  var m = document.getElementById('certSidebarMenu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+
+function openCertModal(sourceKey){
+  var dd = document.getElementById('certDropdown'); if(dd) dd.classList.remove('open');
+  activeCertSource = sourceKey;
+  var s = certSources[sourceKey];
+  // update modal header
+  document.getElementById('certModalTitle').textContent = s.emoji + ' ' + s.label + ' Certificates';
+  document.getElementById('certModalSub').textContent = s.sub;
+  // update hero
+  var hero = document.getElementById('certHero');
+  hero.className = 'cert-hero ' + s.src;
+  document.getElementById('certHeroEmoji').textContent = s.emoji;
+  document.getElementById('certHeroTitle').textContent = 'Discover ' + s.label + ' Certificates';
+  document.getElementById('certHeroSub').textContent = 'AI fetches top certification programs from ' + s.sub;
+  // update fetch btn
+  document.getElementById('certFetchBtn').style.background = 'linear-gradient(135deg,' + s.color + ',color-mix(in srgb,' + s.color + ' 70%,#6366f1))';
+  // update progress bar colour
+  document.getElementById('certProgressFill').style.background = 'linear-gradient(90deg,' + s.color + ',color-mix(in srgb,' + s.color + ' 60%,#6366f1))';
+  // clear results
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certEmpty').classList.remove('visible');
+  document.getElementById('certStatsBar').style.display = 'none';
+  document.getElementById('certFilterTabs').style.display = 'none';
+  document.getElementById('certLoading').classList.remove('visible');
+  openModal('certModal');
+  // auto-fetch
+  fetchCertificates();
+}
+
+function filterCertCards(type, el){
+  document.querySelectorAll('.cert-filter-tab').forEach(function(t){ t.classList.remove('active'); t.style.background=''; t.style.color=''; t.style.borderColor=''; });
+  if(el){ el.classList.add('active'); el.style.background='linear-gradient(135deg,'+certSources[activeCertSource].color+',color-mix(in srgb,'+certSources[activeCertSource].color+' 60%,#6366f1))'; el.style.color='#fff'; el.style.borderColor='transparent'; }
+  var cards = document.querySelectorAll('.cert-card');
+  cards.forEach(function(c){
+    if(type==='all'){ c.style.display=''; return; }
+    var fee = c.getAttribute('data-fee');
+    var mode = c.getAttribute('data-mode');
+    if(type==='free' && fee==='free'){ c.style.display=''; return; }
+    if(type==='paid' && fee==='paid'){ c.style.display=''; return; }
+    if(type==='online' && mode==='online'){ c.style.display=''; return; }
+    if(type==='offline' && (mode==='offline'||mode==='hybrid')){ c.style.display=''; return; }
+    c.style.display='none';
+  });
+}
+
+function searchCertCards(q){
+  q = q.toLowerCase();
+  document.querySelectorAll('.cert-card').forEach(function(c){ c.style.display = c.innerText.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+function renderCertCard(cert, src){
+  var skills = Array.isArray(cert.skills) ? cert.skills : [];
+  var feeKey = (cert.fee||'').toLowerCase().includes('free') || (cert.fee||'').toLowerCase().includes('₹0') ? 'free' : 'paid';
+  var modeKey = (cert.mode||'').toLowerCase();
+  return `<div class="cert-card ${src}" data-fee="${feeKey}" data-mode="${modeKey}">
+    <div class="cert-card-header">
+      <div>
+        <div class="cert-provider">${cert.provider}</div>
+        <div class="cert-course ${src}">${cert.course}</div>
+      </div>
+      <span class="cert-source-badge ${src}">${certSources[activeCertSource] ? certSources[activeCertSource].emoji+' '+certSources[activeCertSource].label.split(' ')[0] : ''}</span>
+    </div>
+    <div class="cert-meta">
+      <span class="cert-meta-chip">⏱ ${cert.duration}</span>
+      <span class="cert-meta-chip">📶 ${cert.level}</span>
+      <span class="cert-meta-chip">💻 ${cert.mode}</span>
+      ${cert.rating ? `<span class="cert-meta-chip">⭐ ${cert.rating}</span>` : ''}
+    </div>
+    <div class="cert-desc">${cert.desc}</div>
+    <div class="cert-skills">${skills.map(s=>`<span class="cert-skill-tag ${src}">${s}</span>`).join('')}</div>
+    <div class="cert-card-footer">
+      <div>
+        <div class="cert-fee ${src}">${cert.fee}</div>
+        <div class="cert-duration-text">📅 ${cert.duration}</div>
+      </div>
+      <a href="${cert.enrollUrl||'#'}" target="_blank" class="btn-cert-enroll ${src}">Enroll Now →</a>
+    </div>
+  </div>`;
+}
+
+async function fetchCertificates(){
+  var s = certSources[activeCertSource];
+  var btn = document.getElementById('certFetchBtn');
+  var icon = document.getElementById('certFetchIcon');
+  var txt = document.getElementById('certFetchText');
+  var loading = document.getElementById('certLoading');
+  var results = document.getElementById('certResults');
+  var empty = document.getElementById('certEmpty');
+  var statsBar = document.getElementById('certStatsBar');
+  var filterTabs = document.getElementById('certFilterTabs');
+  var progress = document.getElementById('certProgressFill');
+  var loadTitle = document.getElementById('certLoadingTitle');
+  var loadSub = document.getElementById('certLoadingSub');
+
+  var field = (document.getElementById('certField').value||'').trim();
+  var level = document.getElementById('certLevel').value;
+  var mode  = document.getElementById('certMode').value;
+
+  btn.disabled = true;
+  icon.innerHTML = '<span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;"></span>';
+  txt.textContent = 'Fetching…';
+  loading.classList.add('visible');
+  results.innerHTML = ''; empty.classList.remove('visible');
+  statsBar.style.display = 'none'; filterTabs.style.display = 'none';
+  progress.style.width = '0%';
+
+  var prog = 0;
+  var pi = setInterval(function(){ prog=Math.min(prog+Math.random()*10,88); progress.style.width=prog+'%'; }, 300);
+
+  loadTitle.textContent = 'Scanning ' + s.label + ' programs…';
+  loadSub.textContent = 'Fetching from ' + s.sub + '…';
+
+  var sourceDesc = {
+    govt:    'SWAYAM, NPTEL, NIELIT, MoE DIKSHA, eBSK — Indian Government certification portals',
+    iit:     'IIT Bombay (CDEEP), IIT Delhi, IIT Madras (NPTEL), IIT Kharagpur, IIT Kanpur online programs',
+    iim:     'IIM Ahmedabad (PGPX, online), IIM Bangalore, IIM Calcutta, IIM Lucknow executive programs',
+    private: 'Google (Career Certificates), Microsoft Learn, IBM SkillsBuild, TCS iON, Infosys Springboard',
+    univ:    'Harvard Online, MIT OpenCourseWare, IISc Bangalore, BITS Pilani, Stanford Online, Oxford Online',
+    coursera:'Coursera (professional certs), edX MicroMasters, Udemy bestsellers, LinkedIn Learning paths',
+    platform:'Udacity Nanodegrees, Simplilearn, Great Learning, UpGrad, NASSCOM FutureSkills, Alison'
+  }[activeCertSource];
+
+  var today = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  var prompt = 'You are a career counsellor listing REAL certification programs. Generate 15 realistic certificate courses from ' + sourceDesc + '.'
+    + (field ? ' Focused on: ' + field + '.' : ' Cover diverse domains: tech, management, finance, data, marketing, HR.')
+    + (level ? ' Level: ' + level + '.' : '')
+    + (mode  ? ' Mode: ' + mode + '.' : '')
+    + ' Current date: ' + today + '.'
+    + ' Return ONLY a valid JSON array (no markdown, no explanation) where each object has exactly these keys:'
+    + ' provider (institution/platform name), course (exact certification title),'
+    + ' level ("Beginner"/"Intermediate"/"Advanced"/"Professional"),'
+    + ' duration (e.g. "4 Weeks" or "3 Months"),'
+    + ' mode ("Online"/"Offline"/"Hybrid"),'
+    + ' fee (e.g. "Free" or "₹2,500" or "$49/month" or "₹15,000"),'
+    + ' rating (e.g. "4.7/5" or null),'
+    + ' desc (2 sentences about the course and career value),'
+    + ' skills (array of 4 skill strings),'
+    + ' enrollUrl (a plausible real URL like https://swayam.gov.in or https://www.coursera.org/…).';
+
+  try {
+    var apiKey = document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('placeiq_api_key') || '';
+    if(!apiKey){ clearInterval(pi); loading.classList.remove('visible'); btn.disabled=false; icon.textContent='🔍'; txt.textContent='Fetch Certificates'; toast('⚠️ Please enter your Anthropic API Key in the top bar first.','error'); return; }
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body:JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:3500,
+        messages:[{role:'user',content:prompt}] })
+    });
+    if (!resp.ok) {
+      var errData = await resp.json().catch(function(){ return {}; });
+      var errMsg = (errData.error && errData.error.message) ? errData.error.message : ('HTTP ' + resp.status);
+      throw new Error(errMsg);
+    }
+    var data = await resp.json();
+    var raw = (data.content||[]).map(function(x){return x.text||'';}).join('');
+    raw = raw.replace(/^```[a-z]*\n?/i,'').replace(/```$/,'').trim();
+    var arr; try{ arr=JSON.parse(raw); }catch(e){ arr=[]; }
+    if(!Array.isArray(arr)) arr=[];
+    certData = arr;
+
+    clearInterval(pi); progress.style.width='100%';
+    setTimeout(function(){
+      loading.classList.remove('visible');
+      btn.disabled=false; icon.textContent='🔍'; txt.textContent='Refresh';
+      if(!arr.length){ empty.classList.add('visible'); return; }
+
+      var free = arr.filter(function(c){ var f=(c.fee||'').toLowerCase(); return f.includes('free')||f.includes('₹0'); });
+      var paid = arr.filter(function(c){ var f=(c.fee||'').toLowerCase(); return !f.includes('free')&&!f.includes('₹0'); });
+      var online = arr.filter(function(c){ return (c.mode||'').toLowerCase().includes('online'); });
+
+      document.getElementById('cStatTotal').textContent = arr.length;
+      document.getElementById('cStatFree').textContent  = free.length;
+      document.getElementById('cStatPaid').textContent  = paid.length;
+      document.getElementById('cStatOnline').textContent= online.length;
+      statsBar.style.display='grid'; filterTabs.style.display='flex';
+
+      var src = s.src;
+      var html = '<div class="cert-section-head ' + src + '">'
+        + s.emoji + ' ' + s.label + ' — Certification Programs'
+        + ' <span class="cert-count-badge ' + src + '">' + arr.length + ' Courses</span></div>'
+        + '<div class="cert-grid">' + arr.map(function(c){ return renderCertCard(c,src); }).join('') + '</div>';
+      results.innerHTML = html;
+      toast('🏅 ' + arr.length + ' certificates found from ' + s.label + '!');
+    }, 500);
+  } catch(e){
+    clearInterval(pi);
+    loading.classList.remove('visible');
+    btn.disabled=false; icon.textContent='🔍'; txt.textContent='Fetch Certificates';
+    toast('Could not fetch certificates: ' + (e && e.message ? e.message : 'Check your API key and connection.'), 'error');
+  }
+}
+</script>
+</body>
+</html>
